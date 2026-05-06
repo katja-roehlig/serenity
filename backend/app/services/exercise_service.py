@@ -6,6 +6,17 @@ from exceptions import VectorError
 
 
 class ExerciseService:
+    async def get_exercise_by_id(self, db, exercise_id):
+        try:
+            exercise = await db.get(Exercise, exercise_id)
+            return exercise
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
+
     async def add_exercise(self, db, exercise):
         db.add(exercise)
         try:
@@ -34,7 +45,6 @@ class ExerciseService:
             exercises = result.scalars().all()
             return exercises
         except SQLAlchemyError as e:
-            await db.rollback()
             raise e
 
     async def delete_exercise(self, db, id):
@@ -81,3 +91,6 @@ class ExerciseService:
         except SQLAlchemyError as e:
             await db.rollback()
             raise e
+
+
+EXERCISE_SERVICE = ExerciseService()

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import cast
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,9 +22,11 @@ from app.schemas.schemas import (
     UserOnboarding,
     UserRead,
 )
-
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.runnables import RunnableConfig
+from app.ai.agent import AgentState, create_serenity_core_agent
 from app.services.user_service import UserService, UserPropertyService
-from app.services.exercise_service import ExerciseService
+from app.services.exercise_service import EXERCISE_SERVICE
 from sqlalchemy.exc import SQLAlchemyError
 from exceptions import VectorError
 
@@ -48,7 +51,6 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 USER_SERVICE = UserService()
 USER_PROPERTY_SERVICE = UserPropertyService()
-EXERCISE_SERVICE = ExerciseService()
 
 
 # token wird aus dem header gefischt und entschlüsselt, bis wieder die user_id als string dasteht
@@ -173,7 +175,7 @@ async def show_user_profile(current_user: User = Depends(get_current_user)):
 
 
 @app.post("/onboarding")
-async def get_onboarding_data(
+async def save_onboarding_data(
     onboarding_data: UserOnboarding,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -190,14 +192,30 @@ async def handle_chat(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
+    langchain_messages = [
+        (
+            HumanMessage(content=item.content)
+            if item.role == "user"
+            else AIMessage(content=item.content)
+        )
+        for item in conversation
+    ]
     user_strengths, user_safe_place = await USER_PROPERTY_SERVICE.get_user_resources(
         db, current_user.id
     )
-    print("RESOURCES: ", user_strengths, user_safe_place)
-    response = await get_ai_response(
-        conversation, current_user, user_strengths, user_safe_place
-    )
-    ai_response, input_tokens, chached_tockens, output_tokens = response
-    # print("Das kommt von der Ai zurück:", response)
-    return {"role": "assistant", "content": ai_response}
+    user_data = {
+        "nickname": current_user.nickname,
+        "age": current_user.age,
+        "gender": current_user.gender,
+        "strengths": user_strengths,
+        "safe_place": user_safe_place,
+    }
+
+    config: RunnableConfig = {"configurable": {"thread_id": str(current_user.id)}}
+    agent = create_serenity_core_agent(db, user_data)
+    # dem agenten die bisherigen nachrichten mitgeben
+    info_for_agent: AgentState = {"messages": langchain_messages}
+    ai_response = cast(AgentState, await agent.ainvoke(info_for_agent, config))
+    serenity_text = ai_response["messages"][-1].content  # nur die letzte nachricht
+
+    return {"role": "assistant", "content": serenity_text}
