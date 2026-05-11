@@ -7,6 +7,7 @@ export const Header = () => {
       <h1>Serenity</h1>
       <nav>
         <Link to="/">Home</Link>
+        <Link to="/exercise/add">Übung hinzufügen</Link>
       </nav>
     </div>
   );

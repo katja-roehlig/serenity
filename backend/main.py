@@ -83,7 +83,9 @@ async def show_exercises(db: AsyncSession = Depends(get_db)):
 async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(get_db)):
     new_exercise = Exercise(
         title=user_input.title,
-        content=user_input.content,
+        goal=user_input.goal,
+        expertise=user_input.expertise,
+        emotions=user_input.emotions,
         instructions=user_input.instructions,
         media=user_input.media,
     )

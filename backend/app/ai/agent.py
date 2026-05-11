@@ -141,8 +141,8 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
         print(f"No exercise with id {exercise_id} in database")
         return {}
     return {
-        "exercise_title": exercise.title,
-        "exercise_content": exercise.content,
+        "exercise_goal": exercise.goal,
+        "exercise_expertise": exercise.expertise,
         "exercise_instructions": exercise.instructions,
         "is_in_exercise": True,
     }
@@ -169,8 +169,8 @@ async def chat_therapist(state: AgentState, user: dict):
      """
     if state.get("is_in_exercise"):
         system_prompt += f"""
-        AKTUELL: Du führst die Übung '{state.get('exercise_title')}' durch.
-        HINTERGRUND: {state.get('exercise_content')}
+        AKTUELL: Deine Übung hat das Ziel '{state.get('exercise_goal')}'.
+        HINTERGRUND: {state.get('exercise_expertise')}
         DEINE ANLEITUNG: {state.get('exercise_instructions')}
         Wenn keine Übung findest, erstelle eine, die gut auf den user zugeschnitten ist und ihm hilft, sich besser zu fühlen.
         AUFGABE: Begleite den User Schritt für Schritt durch diese Übung. Passe die Übung auf seine Situation an, auch wenn sie dann länger dauert. 

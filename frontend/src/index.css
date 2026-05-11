@@ -22,7 +22,7 @@ main {
   max-width: 800px;
   margin: 0 auto;
   background-color: #fdfdfd;
-  height: 100dvh;
+  min-height: 100dvh;
   box-shadow:
     2px 0px 20px #00000010,
     -2px 0px 20px #00000010;

@@ -4,15 +4,19 @@ import styles from "./ExerciseForm.module.css";
 interface ExerciseFormProps {
   handleSubmit(exercise: {
     title: string;
-    content: string;
-    instructions: string | null;
+    goal: string;
+    expertise: string;
+    emotions: string;
+    instructions: string;
     media: string | null;
   }): void;
   editExercise?: {
     id?: number;
     title: string;
-    content: string;
-    instructions: string | null;
+    goal: string;
+    expertise: string;
+    emotions: string;
+    instructions: string;
     media: string | null;
   };
 }
@@ -22,7 +26,9 @@ export const ExerciseForm = ({
   editExercise,
 }: ExerciseFormProps) => {
   const [title, setTitle] = useState(editExercise?.title ?? "");
-  const [content, setContent] = useState(editExercise?.content ?? "");
+  const [goal, setGoal] = useState(editExercise?.goal ?? "");
+  const [expertise, setExpertise] = useState(editExercise?.expertise ?? "");
+  const [emotions, setEmotions] = useState(editExercise?.emotions ?? "");
   const [instructions, setInstructions] = useState(
     editExercise?.instructions ?? "",
   );
@@ -31,13 +37,17 @@ export const ExerciseForm = ({
     event.preventDefault();
     const exercise = {
       title: title,
-      content: content,
-      instructions: instructions ? instructions : null,
+      goal: goal,
+      expertise: expertise,
+      emotions: emotions,
+      instructions: instructions,
       media: media ? media : null,
     };
     handleSubmit(exercise);
     setTitle("");
-    setContent("");
+    setGoal("");
+    setExpertise("");
+    setEmotions("");
     setInstructions("");
     setMedia("");
   };
@@ -55,17 +65,38 @@ export const ExerciseForm = ({
         />
       </div>
       <div className={styles.inputWrapper}>
-        <label htmlFor="content">Beschreibung: </label>
+        <label htmlFor="goal">Ziel der Übung: </label>
         <textarea
           className={styles.text}
-          name="content"
-          id="content"
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
+          name="goal"
+          id="goal"
+          value={goal}
+          onChange={(event) => setGoal(event.target.value)}
         />
       </div>
       <div className={styles.inputWrapper}>
-        <label htmlFor="instructions">Spezielle Anweisungen: </label>
+        <label htmlFor="expertise">Fachwissen: </label>
+        <textarea
+          className={styles.text}
+          name="expertise"
+          id="expertise"
+          value={expertise}
+          onChange={(event) => setExpertise(event.target.value)}
+        />
+      </div>
+      <div className={styles.inputWrapper}>
+        <label htmlFor="emotions">Emotionaler Zustand: </label>
+        <textarea
+          className={styles.text}
+          name="emotions"
+          id="emotions"
+          value={emotions}
+          onChange={(event) => setEmotions(event.target.value)}
+        />
+      </div>
+
+      <div className={styles.inputWrapper}>
+        <label htmlFor="instructions">Anleitung: </label>
         <textarea
           className={styles.text}
           name="instructions"

@@ -6,7 +6,9 @@ import { ExerciseForm } from "../../components/ExerciseForm/ExerciseForm";
 interface ExerciseData {
   id?: number;
   title: string;
-  content: string;
+  goal: string;
+  expertise: string;
+  emotions: string;
   instructions: string;
   media: string;
 }
@@ -61,7 +63,7 @@ export const Exercise = () => {
     console.log("Okay, here we go!");
     console.log(exercise);
     try {
-      const response = await api.put(`/exercise/${editExercise.id}`, exercise);
+      const response = await api.put(`/exercise/${editExercise?.id}`, exercise);
       console.log("Erfolg:", response.data);
       alert("Juhuu das hat geklappt");
       setEditExercise(null);
@@ -90,12 +92,12 @@ export const Exercise = () => {
             className={`${index % 2 === 0 ? styles.oddCard : styles.evenCard}`}
           >
             <h3>{exercise.title}</h3>
-            <p className={styles.content}>{exercise.content}</p>
+            <p className={styles.content}>{exercise.expertise}</p>
             <div className={styles.buttonContainer}>
               <button type="button" onClick={() => setEditExercise(exercise)}>
                 Bearbeiten
               </button>
-              <button type="button" onClick={() => handleDelete(exercise.id)}>
+              <button type="button" onClick={() => handleDelete(exercise?.id)}>
                 Löschen
               </button>
             </div>

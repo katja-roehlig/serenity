@@ -7,12 +7,14 @@ class Exercise(Base):
     __tablename__ = "exercises"
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
-    content = Column(Text, nullable=False, unique=True)
-    instructions = Column(Text)
+    goal = Column(Text, nullable=False)
+    expertise = Column(Text, nullable=False)
+    emotions = Column(Text, nullable=False)
+    instructions = Column(Text, nullable=False)
     media = Column(String, unique=True)
 
     def __repr__(self):
-        return f"Exercise: {self.id}: {self.title} with {self.content} and instructions {self.instructions}"
+        return f"Exercise: {self.id}: {self.title} with {self.goal}, {self.expertise}, {self.emotions} and instructions {self.instructions}"
 
     def __str__(self):
         return f"Exercise: {self.title}"

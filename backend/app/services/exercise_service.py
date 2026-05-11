@@ -29,7 +29,7 @@ class ExerciseService:
             raise e
         try:
             await VECTOR_SERVICE.put_exercise(
-                exercise.title, exercise.content, exercise.id
+                exercise.goal, exercise.expertise, exercise.emotions, exercise.id
             )  # der Vektor_service wird aufgerufen, um direkt die Übung in ChromaDB zu überführen.
             print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
             return exercise
@@ -74,14 +74,19 @@ class ExerciseService:
             return None
         try:
             await VECTOR_SERVICE.put_exercise(
-                update_exercise.title, update_exercise.content, id
+                update_exercise.goal,
+                update_exercise.expertise,
+                update_exercise.emotions,
+                id,
             )
             print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
         except VectorError:
             print("Error updating the vector database")
             raise
         exercise_to_update.title = update_exercise.title
-        exercise_to_update.content = update_exercise.content
+        exercise_to_update.goal = update_exercise.goal
+        exercise_to_update.expertise = update_exercise.expertise
+        exercise_to_update.emotions = update_exercise.emotions
         exercise_to_update.instructions = update_exercise.instructions
         exercise_to_update.media = update_exercise.media
         try:

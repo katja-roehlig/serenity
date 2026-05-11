@@ -6,12 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+API_KEY = os.getenv("OPENAI_API_KEY")
+
 
 class VectorService:
     def __init__(
         self,
     ):  # client, embeddings, vector_store hier nicht in den argumenten, weil sie konstant sind
-        API_KEY = os.getenv("OPENAI_API_KEY")
+
         self.client = chromadb.PersistentClient(os.path.join("data", "chroma_db"))
         self.embeddings = OpenAIEmbeddings(
             api_key=API_KEY, model="text-embedding-3-small"
@@ -22,8 +24,8 @@ class VectorService:
             collection_name="exercises_collection",
         )
 
-    async def put_exercise(self, title, content, exercise_id):
-        full_text = f"Titel: {title}, Inhalt: {content}"
+    async def put_exercise(self, goal, expertise, emotions, exercise_id):
+        full_text = f"Goal: {goal}, Expertise: {expertise}, Emotions: {emotions}"
         await self.vector_store.aadd_texts(
             texts=[full_text], metadatas=[{"id": exercise_id}], ids=[str(exercise_id)]
         )

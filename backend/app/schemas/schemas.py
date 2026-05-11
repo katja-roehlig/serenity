@@ -12,8 +12,10 @@ class NewBaseModel(BaseModel):
 # gibt der user beim erstellen(POST) ein
 class ExerciseCreate(NewBaseModel):
     title: str
-    content: str
-    instructions: str | None = None
+    goal: str
+    expertise: str
+    emotions: str
+    instructions: str
     media: str | None = None
 
 
