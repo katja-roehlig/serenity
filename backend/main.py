@@ -26,13 +26,20 @@ from app.schemas.api_schemas import (
     UserOnboarding,
     UserRead,
 )
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, RemoveMessage
 from langchain_core.runnables import RunnableConfig
 from app.ai.agent import AgentState, create_serenity_core_agent
-from app.services.user_service import UserService, UserPropertyService
+from app.services.user_service import USER_SERVICE
+from app.services.user_property_service import USER_PROPERTY_SERVICE
 from app.services.exercise_service import EXERCISE_SERVICE
 from sqlalchemy.exc import SQLAlchemyError
 from app.services.vector_service import VECTOR_SERVICE
+from app.core.chat_route_utils import (
+    activate_archivist_agent,
+    trim_chat_history,
+    get_user_resources,
+)
+from app.ai.archivist_agent import ArchivistState, create_archivist_agent
 from exceptions import VectorError
 from app.core.observer import langfuse_handler
 
@@ -56,8 +63,6 @@ app.add_middleware(
 )
 load_dotenv()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
-USER_SERVICE = UserService()
-USER_PROPERTY_SERVICE = UserPropertyService()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -199,29 +204,15 @@ async def save_onboarding_data(
 
 @app.post("/chat")
 async def handle_chat(
-    conversation: list[ChatItem],
+    new_message: ChatItem,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Umformulieren, der Messages, die reinkommen, so dass sie zu langchain passen
-    langchain_messages = [
-        (
-            HumanMessage(content=item.content)
-            if item.role == "user"
-            else AIMessage(content=item.content)
-        )
-        for item in conversation
-    ]
-    user_strengths, user_safe_place = await USER_PROPERTY_SERVICE.get_user_resources(
-        db, current_user.id
-    )
-    user_data = {
-        "nickname": current_user.nickname,
-        "age": current_user.age,
-        "gender": current_user.gender,
-        "strengths": user_strengths,
-        "safe_place": user_safe_place,
-    }
+    # Umformulieren, der vom Frontend kommenden new-message, so dass sie zu langchain passt
+    current_user_message = HumanMessage(content=new_message.content)
+
+    user_data = await get_user_resources(db, current_user)
+    print(f"USER-DATA: {user_data}")
 
     config: RunnableConfig = {
         "configurable": {"thread_id": str(current_user.id)},
@@ -233,14 +224,40 @@ async def handle_chat(
             "agent_version": "Version_1",
         },
     }
-    agent = create_serenity_core_agent(db, user_data)
+    serenity_core_agent = create_serenity_core_agent(db, user_data)
+    message_limit = 16
+    # hier wird der Archivist_Agent aktiviert!
+    chat_state = serenity_core_agent.get_state(config)
+    old_messages = chat_state.values.get("messages", [])
+    total_messages = list(old_messages) + [current_user_message]
+    if len(total_messages) >= message_limit:
+        if await activate_archivist_agent(db, current_user, total_messages):
+            await trim_chat_history(serenity_core_agent, config, old_messages)
+
     # dem agenten die bisherigen nachrichten mitgeben
-    info_for_agent: AgentState = {"messages": langchain_messages}
+    serenity_input: AgentState = {"messages": [current_user_message]}
     ai_response: AgentState = cast(
-        AgentState, await agent.ainvoke(info_for_agent, config)
+        AgentState, await serenity_core_agent.ainvoke(serenity_input, config)
     )
     serenity_text = ai_response["messages"][-1].content  # nur die letzte nachricht
+    try:
+        chat_state = serenity_core_agent.get_state(config)
+        checkpointer_messages = chat_state.values.get("messages", [])
+        logger.info(f"--- CHECKPOINTER DIAGNOSIS FOR USER {current_user.id} ---")
+        logger.info(f"Total messages in Checkpointer RAM: {len(checkpointer_messages)}")
 
+        # Wir loggen die letzten zwei Nachrichten, um zu sehen ob User & KI drin sind
+        if len(checkpointer_messages) >= 2:
+            logger.info(
+                f"Last User Message in RAM: {checkpointer_messages[-2].content}"
+            )
+            logger.info(
+                f"Last Serenity Message in RAM: {checkpointer_messages[-1].content}"
+            )
+        logger.info("-------------------------------------------------------")
+
+    except Exception as e:
+        logger.error(f"Failed to read from checkpointer during diagnosis: {e}")
     return {"role": "assistant", "content": serenity_text}
 
 

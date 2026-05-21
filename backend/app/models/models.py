@@ -42,20 +42,9 @@ class UserProperty(Base):
     reasoning = Column(JSON, nullable=True)
     created_at = Column(String)
     expires_at = Column(String, nullable=True, default=None)
+    status = Column(String, default="active")
+    counter = Column(Integer, nullable=True, default=None)
     user = relationship("User", back_populates="properties")
 
     def __repr__(self):
         return f"<UserProperty(id={self.id}, category='{self.category}',content ='{self.content}' reasoning={self.reasoning})>"
-
-
-# class UserProperty(Base):
-#     __tablename__ = "user_properties"
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-#     category = Column(String, nullable=False)
-#     content = Column(Text, nullable=False)
-#     is_active = Column(Boolean, nullable=False, default=True)
-#     user = relationship("User", back_populates="properties")
-
-#     def __repr__(self):
-#         return f"<UserProperty(id={self.id}, category='{self.category}',content ='{self.content}' active={self.is_active})>"

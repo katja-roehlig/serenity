@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from langchain_core.utils.utils import convert_to_secret_str
+from langchain_core.runnables.config import run_in_executor
 
 load_dotenv()
 
@@ -101,8 +102,12 @@ class VectorService:
             "status": status,
         }
         try:
-            result = await self.memory_store.asimilarity_search_with_score(
-                embedding=embedding, k=1, where=search_filter
+            result = await run_in_executor(
+                None,
+                self.memory_store.similarity_search_by_vector_with_relevance_scores,
+                embedding=embedding,
+                k=1,
+                filter=search_filter,
             )
             return result
         except Exception as e:

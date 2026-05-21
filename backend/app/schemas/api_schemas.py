@@ -1,3 +1,5 @@
+from typing import List, Literal, Optional
+
 from pydantic import BaseModel, EmailStr, ConfigDict
 from pydantic.alias_generators import to_camel
 
@@ -16,7 +18,7 @@ class ExerciseCreate(NewBaseModel):
     expertise: str
     emotions: str
     instructions: str
-    media: str | None = None
+    media: str | None = None  # Feld ist optional
 
 
 # wird mitgeschickt, wenn das FE die daten abruft
@@ -50,8 +52,8 @@ class ReturnedLoginData(NewBaseModel):
 
 
 class UserOnboarding(NewBaseModel):
-    age: int
-    gender: str
+    age: int | None = None  # Feld ist optional, alte Schreibweise: Optional[int] = None
+    gender: str | None = None
     strengths: list[str]
     safe_place: str
 
@@ -60,6 +62,21 @@ class ChatItem(NewBaseModel):
     id: str
     role: str
     content: str
+
+
+class UserProfile(BaseModel):
+    id: str  # UUID
+    user_id: int  # ID des Benutzers (Secondary Key)
+    category: str
+    content: str
+    reasoning: List[str] | None = None
+    created_at: str  # Erstellungsdatum
+    expires_at: str | None = None  # Das Ablaufdatum
+    counter: int | None = None
+    status: str = "active"
+
+    class Config:
+        from_attributes = True
 
 
 # class ChatContent(BaseModel):

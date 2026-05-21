@@ -141,7 +141,7 @@ export const Onboarding = () => {
         </ul>
 
         <label htmlFor="safe_place">
-          Wo fühlst du dich richtig wohl? Bechreibe den Ort.
+          Wo fühlst du dich richtig wohl? Beschreibe den Ort.
         </label>
         <textarea
           name="safePlace"

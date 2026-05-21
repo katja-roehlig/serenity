@@ -8,10 +8,13 @@ from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from pydantic import BaseModel, Field
+
+# from pydantic import BaseModel, Field
+from app.schemas.ai_schemas import StateAnalysis
 from app.services.exercise_service import EXERCISE_SERVICE
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.vector_service import VECTOR_SERVICE
+from langchain_core.utils.utils import convert_to_secret_str
 
 load_dotenv()
 
@@ -25,12 +28,14 @@ if not TAVILY_API_KEY:
 
 
 # Das schlaue Gehirn für die Analyse (Check-Up & Zusammenfassung)
-logic_model = ChatOpenAI(temperature=0.1, model="gpt-4.1-mini", api_key=OPENAI_API_KEY)  # type: ignore
+logic_model = ChatOpenAI(temperature=0.1, model="gpt-4.1-mini", api_key=convert_to_secret_str(OPENAI_API_KEY))  # type: ignore
 # Das empathische Gehirn für den Chat (günstig)
-chat_model = ChatOpenAI(temperature=0.8, model="gpt-4o-mini", api_key=OPENAI_API_KEY)  # type: ignore
+chat_model = ChatOpenAI(
+    temperature=0.8, model="gpt-4o-mini", api_key=convert_to_secret_str(OPENAI_API_KEY)
+)
 
 
-tavily = TavilySearch(api_key=TAVILY_API_KEY, max_results=5)
+tavily = TavilySearch(api_key=convert_to_secret_str(TAVILY_API_KEY), max_results=5)
 tools = [tavily]
 # Das Logik-Modell braucht Zugriff auf die Tools
 logic_model_with_tools = logic_model.bind_tools(tools)
@@ -44,25 +49,12 @@ class AgentState(TypedDict):
     has_enough_info: NotRequired[bool]
     needs_research: NotRequired[bool]
     is_in_exercise: NotRequired[bool]
-    exercise_title: NotRequired[Optional[str]]
-    exercise_content: NotRequired[Optional[str]]
+    exercise_goal: NotRequired[Optional[str]]
+    exercise_expertise: NotRequired[Optional[str]]
     exercise_instructions: NotRequired[Optional[str]]
-    exercise_id: NotRequired[Optional[str]]
-
-
-class StateAnalysis(BaseModel):
-    is_user_ready: bool = Field(
-        description="Can the user physically/mentally perform an exercise right now?"
-    )
-    is_exercise_useful: bool = Field(
-        description="Is an exercise better than just talking right now?"
-    )
-    has_enough_info: bool = Field(
-        description="True ONLY if the user has provided enough context to select a SPECIFIC exercise. If the user is vague (e.g., 'I feel bad'), set to False so we can ask clarifying questions first."
-    )
-    needs_research: bool = Field(
-        description="Do we need to search the web to understand a term or situation?"
-    )
+    exercise_id: NotRequired[Optional[int]]
+    # user_id: str
+    is_session_finished: NotRequired[bool]
 
 
 def doorman(state: AgentState):
@@ -74,10 +66,10 @@ def doorman(state: AgentState):
 
 async def check_user_state(state: AgentState, user: dict):
     print("--- CHECK USER STATE ---")
+    user_context = create_user_context(user)
     system_prompt = f"""
-    Du bist die Analyse-Einheit von Serenity. Dein User ist {user['nickname']}.
-    Stärken: {user['strengths']}. Sicherer Ort: {user['safe_place']}.
-    
+    Du bist die Analyse-Einheit von Serenity. 
+    {user_context}
     Analysiere den Chatverlauf und entscheide präzise über die nächsten Schritte.
     Nutze das Onboarding-Wissen, um zu beurteilen, ob wir genug Infos haben. 
     Wenn der User explizit nach einer Übung fragt, dann gib ihm auch eine, wenn du genügend Infos über ihn hast.
@@ -129,12 +121,17 @@ async def get_matching_exercise(state: AgentState):
         [Was braucht das System jetzt? Bei Trauer z.B.: Trost, Stabilisierung, sanfte Aktivierung, emotionaler Raum.]
         WICHTIG: Nutze niemals Begriffe wie "Aggression" oder "Schlagen", wenn der User traurig ist. Nutze niemals "Ruhe", wenn der User explodieren will.
     """
-    response = await logic_model.ainvoke([SystemMessage(content=user_summary)] + list(state["messages"]))
+    response = await logic_model.ainvoke(
+        [SystemMessage(content=user_summary)] + list(state["messages"])
+    )
 
     summary_text = str(response.content)
     print(f"Zusammenfassung für chroma: {summary_text}")
     exercise_id = await VECTOR_SERVICE.search_exercise(summary_text)
-    return {"exercise_id": exercise_id, "is_in_exercise": True,}
+    return {
+        "exercise_id": exercise_id,
+        "is_in_exercise": True,
+    }
 
 
 async def get_exercise_from_db(state: AgentState, db: AsyncSession):
@@ -152,20 +149,21 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
         "exercise_expertise": exercise.expertise,
         "exercise_instructions": exercise.instructions,
     }
-def route_after_exercise_search(state:AgentState):
-    if state.get["exercise_id"]
+
 
 async def chat_therapist(state: AgentState, user: dict):
     print("--- YOUR THERAPIST IS TALKING ---")
+    user_context = create_user_context(user)
     system_prompt = f"""
+       
         Du bist Serenity, ein erfahrener und einfühlsamer Therapeut.
-        Antworte extrem kurz und knackig. Verwende maximal 50-60 Wörter. 
-        Dein Client ist {user["nickname"]}, {user["gender"]} und {user["age"]} Jahre alt.
-        Sein Wohlfühlort ist {user["safe_place"]} und er zu seinen Stärken zählen: {user["strengths"]}.
+        Antworte extrem kurz und knackig. Verwende maximal 50-60 Wörter.
+        {user_context}
+    
         DEINE MISSION:
             1. Sei empathisch. Wenn der User leidet, validiere zuerst seine Gefühle (z.B. 'Das ist echt verdammt hart, dass du den Job verloren hast').
             2. Nutze die Stärken NIEMALS als Floskel. 
-            3. Biete den Wohlfühlort oder die Stärken nur als OPTION an, wenn der User nach Bewältigungsstrategien sucht oder völlig blockiert ist. 
+            3. Biete den Wohlfühlort des Users als OPTION an, wenn der User nach Bewältigungsstrategien sucht oder völlig blockiert ist. 
             4. Wenn der User einen Vorschlag ablehnt, akzeptiere das sofort und bohre nicht nach.
         DEIN ZIEL:
         Sobald eine Übung abgeschlossen ist ODER es dem User besser geht, ermutige ihn, wieder in den Alltag zu gehen.
@@ -186,15 +184,15 @@ async def chat_therapist(state: AgentState, user: dict):
             ENDE DER KOMPLETTEN ÜBUNG: Setze das Signal [FINISHED] ans Ende deiner Antwort."""
         else:
             system_prompt += """
-            Es gibt keine passende Übung,aber der User braucht jetzt Struktur.
-            ERSTELLE EINE EIGENE INTERVENTION, die GENAU auf den Zustand des Users passt:
-            1. Gehe mit dem User Schritt für Schritt durch. Nicht alles auf einmal. Keine Nummerierung der Schritte vorm User.
-            2. Hole dir nach jedem Schritt Feedback vom User ein.
-            3. Die Übung muss den User stabilisieren (Erdung, Atmung oder Distanzierung).
-            4. Zieh die Übung nicht stur durch. Gehe auf den User ein. 
-            5. Beende die Übung, wenn es dem usser besser geht, nicht wenn die Schritte zu ende sind: Frage, wie ihm die Übung gefallen hat.
-            6. Beende die Übung danach klar mit dem Signal [FINISHED].
-            """
+            Es gibt keine passende Übung,aber der User braucht jetzt Struktur."""
+            # ERSTELLE EINE EIGENE INTERVENTION, die GENAU auf den Zustand des Users passt:
+            # 1. Gehe mit dem User Schritt für Schritt durch. Nicht alles auf einmal. Keine Nummerierung der Schritte vorm User.
+            # 2. Hole dir nach jedem Schritt Feedback vom User ein.
+            # 3. Die Übung muss den User stabilisieren (Erdung, Atmung oder Distanzierung).
+            # 4. Zieh die Übung nicht stur durch. Gehe auf den User ein.
+            # 5. Beende die Übung, wenn es dem usser besser geht, nicht wenn die Schritte zu ende sind: Frage, wie ihm die Übung gefallen hat.
+            # 6. Beende die Übung danach klar mit dem Signal [FINISHED].
+            # """
     # Nachrichtenliste für KI zusammen bauen
     # System-Prompt und hängen den bisherigen Chatverlauf an
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
@@ -230,7 +228,7 @@ async def web_search(state: AgentState):
 state_memory = MemorySaver()
 
 
-def create_serenity_core_agent(db_session, user_data: dict):
+def create_serenity_core_agent(db: AsyncSession, user_data: dict):
     # Graph wird initialisiert
     workflow = StateGraph(AgentState)
 
@@ -238,9 +236,7 @@ def create_serenity_core_agent(db_session, user_data: dict):
     workflow.add_node("check_user_state", partial(check_user_state, user=user_data))
     workflow.add_node("web_search", web_search)
     workflow.add_node("get_matching_exercise", get_matching_exercise)
-    workflow.add_node(
-        "get_exercise_from_db", partial(get_exercise_from_db, db=db_session)
-    )
+    workflow.add_node("get_exercise_from_db", partial(get_exercise_from_db, db=db))
     workflow.add_node("chat_therapist", partial(chat_therapist, user=user_data))
 
     # workflow.set_contional_entry_point(function, {"return value der funktion": "name aus workflow.add()"})
@@ -262,7 +258,6 @@ def create_serenity_core_agent(db_session, user_data: dict):
             "chat_therapist": "chat_therapist",
         },
     )
-    
 
     workflow.add_edge("web_search", "chat_therapist")
     workflow.add_edge("get_matching_exercise", "get_exercise_from_db")
@@ -271,3 +266,17 @@ def create_serenity_core_agent(db_session, user_data: dict):
 
     return workflow.compile(checkpointer=state_memory)
 
+
+def create_user_context(user_data):
+    user_context = f"""
+         Der User ist {user_data.get("nickname")}"""
+    if user_data.get("gender"):
+        user_context = f"{user_data["gender"]}"
+    if user_data.get("age"):
+        user_context = f"und {user_data["age"]} Jahre alt."
+    if user_data.get("safe_place"):
+        user_context += f"\nSein Wohlfühlort ist {user_data['safe_place']}."
+    if user_data.get("situation"):
+        user_context += (
+            f"\nSeine aktuelle Lebenssituation ist: {user_data['situation']}."
+        )
