@@ -69,8 +69,8 @@ class UserPropertyService:
             .limit(5)
         )
         try:
-            result = db.execute(query)
-            return result.scalars().all
+            result = await db.execute(query)
+            return result.scalars().all()
         except Exception as e:  # allgemeine Aussage, da kein Einfluss auf Runtime
             logger.error(
                 f"Database Error: Failed to find current_situations for user {user_id}: {e}",

@@ -1,9 +1,9 @@
 from functools import partial
 import operator
-from typing import Annotated, NotRequired, Optional, Sequence, TypedDict, cast
+from typing import Annotated, Any, NotRequired, Optional, Sequence, TypedDict, cast
 from dotenv import load_dotenv
 import os
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph, END
@@ -44,6 +44,7 @@ logic_model_with_tools = logic_model.bind_tools(tools)
 # state wird erfasst
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
+    user_id: str
     is_user_ready: NotRequired[bool]
     is_exercise_useful: NotRequired[bool]
     has_enough_info: NotRequired[bool]
@@ -53,20 +54,21 @@ class AgentState(TypedDict):
     exercise_expertise: NotRequired[Optional[str]]
     exercise_instructions: NotRequired[Optional[str]]
     exercise_id: NotRequired[Optional[int]]
-    # user_id: str
-    is_session_finished: NotRequired[bool]
+    user_data: NotRequired[dict]
+    memory_results: NotRequired[list[str]]
 
 
 def doorman(state: AgentState):
     print("--- DOORMAN ---")
     if state.get("is_in_exercise"):
-        return "chat_therapist"
+        return "get_user_memory"
     return "check_user_state"
 
 
-async def check_user_state(state: AgentState, user: dict):
+async def check_user_state(state: AgentState):
     print("--- CHECK USER STATE ---")
-    user_context = create_user_context(user)
+    user_data = state.get("user_data", {})
+    user_context = create_user_context(user_data)
     system_prompt = f"""
     Du bist die Analyse-Einheit von Serenity. 
     {user_context}
@@ -101,7 +103,7 @@ def decision_after_check(state: AgentState):
         and state.get("has_enough_info", False)
     ):
         return "get_matching_exercise"  # node
-    return "chat_therapist"
+    return "get_user_memory"
 
 
 async def get_matching_exercise(state: AgentState):
@@ -151,9 +153,39 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
     }
 
 
-async def chat_therapist(state: AgentState, user: dict):
+async def get_user_memory(state: AgentState):
+    print("--- NODE: GET USER MEMORY ---")
+    user_id = state["user_id"]
+    last_message = state["messages"][-1]
+    if not isinstance(last_message, HumanMessage):
+        return {}
+    ids_to_exclude = state.get("user_data", {}).get("excluded_ids", [])
+    results = await VECTOR_SERVICE.get_user_memories_for_serenity(
+        user_id, str(last_message.content)
+    )
+    important_memory = []
+    for result in results:
+        doc, score = result
+        if doc.metadata["id"] in ids_to_exclude:
+            continue
+        if score <= 0.5:
+            user_memory = doc.page_content
+            reasoning_list = doc.metadata.get("reasoning", [])
+            if reasoning_list:
+                user_memory += f"Bestätigt durch: "
+                for reason in reasoning_list:
+                    user_memory += f"\n - {reason}"
+            important_memory.append(user_memory)
+            print(f"MEMORIES: {important_memory[:3]}")
+    return {"memory_results": important_memory[:3]}
+
+
+async def chat_therapist(state: AgentState):
     print("--- YOUR THERAPIST IS TALKING ---")
-    user_context = create_user_context(user)
+    user_data = state.get("user_data", {})
+    user_context = create_user_context(user_data)
+    memories = state.get("memory_results", [])
+
     system_prompt = f"""
        
         Du bist Serenity, ein erfahrener und einfühlsamer Therapeut.
@@ -172,6 +204,11 @@ async def chat_therapist(state: AgentState, user: dict):
         Sage ihm, dass du nur eine KI bist und er jetzt menschliche Hilfe braucht. 
         Verweise ihn IMMER auf die Notrufnummer der Polizei: 112 und die Telefonseelsorge: 0800 111 0 111.
      """
+    if memories:
+        system_prompt += "\nHier sind noch ein paar Inos zum User:"
+        for memory in memories:
+            system_prompt += f"\n{memory}"
+
     if state.get("is_in_exercise"):
         instructions = state.get("exercise_instructions")
         if instructions:
@@ -184,15 +221,8 @@ async def chat_therapist(state: AgentState, user: dict):
             ENDE DER KOMPLETTEN ÜBUNG: Setze das Signal [FINISHED] ans Ende deiner Antwort."""
         else:
             system_prompt += """
-            Es gibt keine passende Übung,aber der User braucht jetzt Struktur."""
-            # ERSTELLE EINE EIGENE INTERVENTION, die GENAU auf den Zustand des Users passt:
-            # 1. Gehe mit dem User Schritt für Schritt durch. Nicht alles auf einmal. Keine Nummerierung der Schritte vorm User.
-            # 2. Hole dir nach jedem Schritt Feedback vom User ein.
-            # 3. Die Übung muss den User stabilisieren (Erdung, Atmung oder Distanzierung).
-            # 4. Zieh die Übung nicht stur durch. Gehe auf den User ein.
-            # 5. Beende die Übung, wenn es dem usser besser geht, nicht wenn die Schritte zu ende sind: Frage, wie ihm die Übung gefallen hat.
-            # 6. Beende die Übung danach klar mit dem Signal [FINISHED].
-            # """
+            Es gibt keine passende Übung. Rede mit dem user und sei aufmerksam"""
+
     # Nachrichtenliste für KI zusammen bauen
     # System-Prompt und hängen den bisherigen Chatverlauf an
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
@@ -228,48 +258,51 @@ async def web_search(state: AgentState):
 state_memory = MemorySaver()
 
 
-def create_serenity_core_agent(db: AsyncSession, user_data: dict):
+def create_serenity_core_agent(
+    db: AsyncSession,
+):
     # Graph wird initialisiert
     workflow = StateGraph(AgentState)
 
     # Nodes zum Graphen hinzufügen, mit partial werden die argumente hinzugefügt - workflow.add_node("name", function)
-    workflow.add_node("check_user_state", partial(check_user_state, user=user_data))
+    workflow.add_node("check_user_state", check_user_state)
     workflow.add_node("web_search", web_search)
     workflow.add_node("get_matching_exercise", get_matching_exercise)
     workflow.add_node("get_exercise_from_db", partial(get_exercise_from_db, db=db))
-    workflow.add_node("chat_therapist", partial(chat_therapist, user=user_data))
+    workflow.add_node("get_user_memory", get_user_memory)
+    workflow.add_node("chat_therapist", chat_therapist)
 
     # workflow.set_contional_entry_point(function, {"return value der funktion": "name aus workflow.add()"})
     workflow.set_conditional_entry_point(
         doorman,
         {
             # links: return wert aus doorman(), rechts: "name" aus workflow.add()
-            "chat_therapist": "chat_therapist",
+            "get_user_memory": "get_user_memory",
             "check_user_state": "check_user_state",
         },
     )
-
     workflow.add_conditional_edges(
         "check_user_state",  # von welcher funktion kommen wir?
         decision_after_check,
         {  # funktion, die entscheidet
-            "web-search": "web_search",  # MEntscheidungsmöglichkeiten
+            "web_search": "web_search",  # MEntscheidungsmöglichkeiten
             "get_matching_exercise": "get_matching_exercise",
-            "chat_therapist": "chat_therapist",
+            "get_user_memory": "get_user_memory",
         },
     )
 
     workflow.add_edge("web_search", "chat_therapist")
     workflow.add_edge("get_matching_exercise", "get_exercise_from_db")
     workflow.add_edge("get_exercise_from_db", "chat_therapist")
+    workflow.add_edge("get_user_memory", "chat_therapist")
     workflow.add_edge("chat_therapist", END)
 
     return workflow.compile(checkpointer=state_memory)
 
 
-def create_user_context(user_data):
+def create_user_context(user_data: dict[str, Any]):
     user_context = f"""
-         Der User ist {user_data.get("nickname")}"""
+         Der User ist {user_data.get("nickname", "Du")}"""
     if user_data.get("gender"):
         user_context = f"{user_data["gender"]}"
     if user_data.get("age"):

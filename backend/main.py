@@ -26,11 +26,10 @@ from app.schemas.api_schemas import (
     UserOnboarding,
     UserRead,
 )
-from langchain_core.messages import HumanMessage, AIMessage, RemoveMessage
+from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
-from app.ai.agent import AgentState, create_serenity_core_agent
+from app.ai.serenity_core_agent import AgentState, create_serenity_core_agent
 from app.services.user_service import USER_SERVICE
-from app.services.user_property_service import USER_PROPERTY_SERVICE
 from app.services.exercise_service import EXERCISE_SERVICE
 from sqlalchemy.exc import SQLAlchemyError
 from app.services.vector_service import VECTOR_SERVICE
@@ -224,7 +223,7 @@ async def handle_chat(
             "agent_version": "Version_1",
         },
     }
-    serenity_core_agent = create_serenity_core_agent(db, user_data)
+    serenity_core_agent = create_serenity_core_agent(db)
     message_limit = 16
     # hier wird der Archivist_Agent aktiviert!
     chat_state = serenity_core_agent.get_state(config)
@@ -235,7 +234,11 @@ async def handle_chat(
             await trim_chat_history(serenity_core_agent, config, old_messages)
 
     # dem agenten die bisherigen nachrichten mitgeben
-    serenity_input: AgentState = {"messages": [current_user_message]}
+    serenity_input: AgentState = {
+        "messages": [current_user_message],
+        "user_id": str(current_user.id),
+        "user_data": user_data,
+    }
     ai_response: AgentState = cast(
         AgentState, await serenity_core_agent.ainvoke(serenity_input, config)
     )
@@ -267,7 +270,7 @@ async def test_vector_db(user_id: int):
     if os.getenv("ENVIRONMENT") != "development":
         raise HTTPException(status_code=403, detail="Forbidden in production")
 
-    memories = await VECTOR_SERVICE.get_memories(user_id=user_id)
+    memories = await VECTOR_SERVICE.get_memories_to_develop(user_id=user_id)
     return {"status": "In der Vektor-DB gefunden:", "data": memories}
 
 

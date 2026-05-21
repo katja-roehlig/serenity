@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import logging
 from langchain_core.utils.utils import convert_to_secret_str
 from langchain_core.runnables.config import run_in_executor
+import asyncio
 
 load_dotenv()
 
@@ -130,15 +131,16 @@ class VectorService:
             return self.add_memory(content, embedding, metadata)
         return False
 
-    # def get_memories(self, user_id: int):
-    #     results = self.memory_store.get(where={"user_id": user_id})
-    #     return results
+    async def get_user_memories_for_serenity(self, user_id: str, text: str):
+        search_filter = {"$and": [{"user_id": user_id}, {"status": "active"}]}
+        result = await self.memory_store.asimilarity_search_with_score(
+            query=text, k=10, filter=search_filter
+        )
+        return result if result else []
 
-    import asyncio
-
-    async def get_memories(self, user_id):
-        # WICHTIG: Wir machen die ID absolut sicher zu einem String für Chroma!
-
+    async def get_memories_to_develop(
+        self, user_id
+    ):  # nur zur Überprüfung, was gespeichert ist in der developer-route
         loop = asyncio.get_running_loop()
         results = await loop.run_in_executor(
             None, lambda: self.memory_store.get(where={"user_id": user_id})
