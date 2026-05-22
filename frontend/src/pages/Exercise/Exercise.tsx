@@ -12,6 +12,7 @@ interface ExerciseData {
   instructions: string;
   media: string;
 }
+
 export const Exercise = () => {
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [editExercise, setEditExercise] = useState<ExerciseData | null>(null);
@@ -38,7 +39,7 @@ export const Exercise = () => {
     }
   }, [editExercise]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     const check = window.confirm("Möchtest du diese Übung wirklich löschen?");
     if (!check) return;
     try {

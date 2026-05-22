@@ -64,7 +64,7 @@ class ChatItem(NewBaseModel):
     content: str
 
 
-class UserProfile(BaseModel):
+class UserProfile(NewBaseModel):
     id: str  # UUID
     user_id: int  # ID des Benutzers (Secondary Key)
     category: str
@@ -79,5 +79,19 @@ class UserProfile(BaseModel):
         from_attributes = True
 
 
-# class ChatContent(BaseModel):
-#     conversations: list[ChatItem]
+class DashboardDataItem(NewBaseModel):
+    id: str
+    content: str
+    reasoning: List[str] | None = None
+    created_at: str
+    expires_at: str | None = None
+
+
+class DashboardDataList(NewBaseModel):
+    current_situation: List[DashboardDataItem]
+    memory: List[DashboardDataItem]
+    safe_place: List[DashboardDataItem]
+    strengths: List[DashboardDataItem]
+    goal: List[DashboardDataItem]
+    belief: List[DashboardDataItem]
+    pattern: List[DashboardDataItem]

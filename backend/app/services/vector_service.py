@@ -118,12 +118,24 @@ class VectorService:
     async def delete_memory(self, memory_id: str):
         try:
             await self.memory_store.adelete(ids=[memory_id])
-            print("User Data successfully deleted")
+            logger.info("User Data successfully deleted from VectorDB: {memory_id}")
             return True
 
         except Exception as e:
-            print(f"Memory Store Error: Failed to delete {memory_id}")
-            return False
+            error_msg = str(e).lower()
+            # falls memory_id schon gelöscht wurde, muss es weiterlaufen, um sql zu löschen!
+            if (
+                "not found" in error_msg
+                or "does not exist" in error_msg
+                or "id not present" in error_msg
+            ):
+                logger.info(f"VectorDB: {memory_id} was alreadyy deleted")
+                return True
+            logger.error(
+                f"Memory Store Error: Failed to delete {memory_id} from VectorDB. Error: {e}",
+                exc_info=True,
+            )
+        return False
 
     async def update_memory(self, content, embedding, metadata):
         success = await self.delete_memory(metadata["id"])

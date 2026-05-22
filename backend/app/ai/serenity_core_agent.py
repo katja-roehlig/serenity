@@ -159,6 +159,8 @@ async def get_user_memory(state: AgentState):
     last_message = state["messages"][-1]
     if not isinstance(last_message, HumanMessage):
         return {}
+    if len(str(last_message)) <= 15:
+        return {}
     ids_to_exclude = state.get("user_data", {}).get("excluded_ids", [])
     results = await VECTOR_SERVICE.get_user_memories_for_serenity(
         user_id, str(last_message.content)

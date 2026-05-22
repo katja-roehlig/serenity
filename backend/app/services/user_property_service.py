@@ -12,33 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class UserPropertyService:
-    # async def get_user_resources(self, db, user_id):
-    #     actual_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    #     query = select(UserProperty).where(
-    #         UserProperty.user_id == user_id,
-    #         or_(
-    #             UserProperty.category == "safe_place",
-    #             UserProperty.reasoning.contains("Onboarding"),
-    #             and_(
-    #                 UserProperty.category == "current_situation",
-    #                 UserProperty.expires_at >= actual_date,
-    #             )
-    #             .order_by(UserProperty.created_at.desc())
-    #             .limit(5),
-    #         ),
-    #     )
-    #     result = await db.execute(query)
-    #     elements = result.scalars().all()
-    #     user_situation = [
-    #         element.content
-    #         for element in elements
-    #         if element.category == "current_situation"
-    #     ]
-    #     user_safe_place = [
-    #         element.content for element in elements if element.category == "safe_place"
-    #     ]
-    #     return user_situation, user_safe_place
 
     async def get_user_safe_place(self, db, user_id):
         query = select(UserProperty).where(
@@ -77,6 +50,22 @@ class UserPropertyService:
                 exc_info=True,
             )
             return []
+
+    async def get_all_active_user_data(self, db, user_id):
+        query = (
+            select(UserProperty).where(
+                UserProperty.user_id == user_id, UserProperty.status == "active"
+            )
+        ).order_by(UserProperty.category)
+        try:
+            result = await db.execute(query)
+            return result.scalars().all()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database connection error for user {user_id}: {e}",
+                exc_info=True,
+            )
+            raise e
 
     async def add_data(self, db, user_property: UserProfile):
         db.add(user_property)
@@ -123,19 +112,37 @@ class UserPropertyService:
             )
             return []
 
-    async def delete_data_by_id(self, data_id, db):
+    async def delete_data_by_id(self, data_id, db, raise_on_error: bool = False):
         data_to_delete = delete(UserProperty).where(UserProperty.id == data_id)
         try:
             await db.execute(data_to_delete)
             await db.commit()
             return True
+
         except Exception as e:
             await db.rollback()
             logger.error(
                 f"Database Error: Failed to delete property {data_id}: {e}, exc_info=True",
                 exc_info=True,
             )
-            return False
+            if raise_on_error:  # in der dashboard route muss user informiert werden
+                raise e
+            return False  # wenn der archivist_agent arbeitet, soll keine info zum user gehen!
+
+    async def find_data_by_user_and_id(self, user_id, data_id, db):
+        query = select(UserProperty).where(
+            UserProperty.user_id == user_id, UserProperty.id == data_id
+        )
+        try:
+            result = await db.execute(query)
+            data = result.scalar_one_or_none()
+            return data
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error by checking user_id {user_id} an data_id {data_id}",
+                exc_info=True,
+            )
+            raise e
 
 
 USER_PROPERTY_SERVICE = UserPropertyService()

@@ -19,6 +19,7 @@ from app.core.auth_utils import (
 )
 from app.schemas.api_schemas import (
     ChatItem,
+    DashboardDataList,
     ExerciseCreate,
     ExerciseRead,
     ReturnedLoginData,
@@ -39,6 +40,7 @@ from app.core.chat_route_utils import (
     get_user_resources,
 )
 from app.ai.archivist_agent import ArchivistState, create_archivist_agent
+from app.services.user_property_service import USER_PROPERTY_SERVICE
 from exceptions import VectorError
 from app.core.observer import langfuse_handler
 
@@ -250,18 +252,91 @@ async def handle_chat(
         logger.info(f"Total messages in Checkpointer RAM: {len(checkpointer_messages)}")
 
         # Wir loggen die letzten zwei Nachrichten, um zu sehen ob User & KI drin sind
-        if len(checkpointer_messages) >= 2:
-            logger.info(
-                f"Last User Message in RAM: {checkpointer_messages[-2].content}"
-            )
-            logger.info(
-                f"Last Serenity Message in RAM: {checkpointer_messages[-1].content}"
-            )
-        logger.info("-------------------------------------------------------")
+        # if len(checkpointer_messages) >= 2:
+        #     logger.info(
+        #         f"Last User Message in RAM: {checkpointer_messages[-2].content}"
+        #     )
+        #     logger.info(
+        #         f"Last Serenity Message in RAM: {checkpointer_messages[-1].content}"
+        #     )
+        # logger.info("-------------------------------------------------------")
 
     except Exception as e:
         logger.error(f"Failed to read from checkpointer during diagnosis: {e}")
     return {"role": "assistant", "content": serenity_text}
+
+
+@app.get("/dashboard", response_model=DashboardDataList)
+async def show_user_data(
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    try:
+        result = await USER_PROPERTY_SERVICE.get_all_active_user_data(
+            db, current_user.id
+        )
+        dashboard_data = prepare_data_for_frontend(result)
+        return dashboard_data
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database currently unavailable.")
+
+
+def prepare_data_for_frontend(result):
+    dashboard_data = {
+        "current_situation": [],
+        "memory": [],
+        "safe_place": [],
+        "strengths": [],
+        "goal": [],
+        "belief": [],
+        "pattern": [],
+    }
+    for element in result:
+        if element.category in dashboard_data:
+            dashboard_data[element.category].append(
+                {
+                    "id": element.id,
+                    "content": element.content,
+                    "reasoning": element.reasoning,
+                    "created_at": element.created_at,
+                    "expires_at": element.expires_at,
+                }
+            )
+    return dashboard_data
+
+
+@app.delete("/dashboard/delete/{item_id}")
+async def delete_dashboard_items(
+    item_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        is_users_data = await USER_PROPERTY_SERVICE.find_data_by_user_and_id(
+            user_id=current_user.id, data_id=item_id, db=db
+        )
+        if is_users_data is None:
+            raise HTTPException(
+                status_code=404, detail="No item found with for this user"
+            )
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500, detail="Database connection failed. Please try again."
+        )
+    success = await VECTOR_SERVICE.delete_memory(item_id)
+    if not success:
+        raise HTTPException(
+            status_code=500, detail="Vector Service temporaly not available."
+        )
+    try:
+        await USER_PROPERTY_SERVICE.delete_data_by_id(
+            data_id=item_id, db=db, raise_on_error=True
+        )
+        return {"message": "successfully deleted"}
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete item in database. Please try again.",
+        )
 
 
 # only test-functions

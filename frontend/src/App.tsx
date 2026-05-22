@@ -7,6 +7,7 @@ import { Onboarding } from "./pages/Onboarding/Onboarding";
 import { Chat } from "./pages/Chat/Chat";
 import { AddExercise } from "./pages/AddExercise/AddExercise";
 import { Exercise } from "./pages/Exercise/Exercise";
+import { Dashboard } from "./pages/Dashboard/dashboard";
 import { Header } from "./components/Header/Header";
 
 export function App() {
@@ -15,7 +16,6 @@ export function App() {
       <Header />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-
         {/* Zur Registrierung */}
         <Route path="/register" element={<Register />} />
 
@@ -28,6 +28,7 @@ export function App() {
         <Route path="/chat" element={<Chat />} />
         <Route path="/exercise/add" element={<AddExercise />} />
         <Route path="/exercise" element={<Exercise />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   );
