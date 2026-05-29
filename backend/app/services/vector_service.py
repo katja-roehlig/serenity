@@ -1,4 +1,5 @@
 import asyncio
+from typing import List, Union
 
 import chromadb
 from langchain_openai import OpenAIEmbeddings
@@ -115,9 +116,13 @@ class VectorService:
             logger.exception("Memory Store Error: Failed do similarity search")
         return False
 
-    async def delete_memory(self, memory_id: str):
+    async def delete_memory(self, ids: Union[str, List[str]]):
+        if isinstance(ids, str):
+            ids_to_delete = [ids]
+        else:
+            ids_to_delete = ids
         try:
-            await self.memory_store.adelete(ids=[memory_id])
+            await self.memory_store.adelete(ids=ids_to_delete)
             logger.info("User Data successfully deleted from VectorDB: {memory_id}")
             return True
 
@@ -129,10 +134,10 @@ class VectorService:
                 or "does not exist" in error_msg
                 or "id not present" in error_msg
             ):
-                logger.info(f"VectorDB: {memory_id} was alreadyy deleted")
+                logger.info(f"VectorDB: {ids_to_delete} was alreadyy deleted")
                 return True
             logger.error(
-                f"Memory Store Error: Failed to delete {memory_id} from VectorDB. Error: {e}",
+                f"Memory Store Error: Failed to delete {ids_to_delete} from VectorDB. Error: {e}",
                 exc_info=True,
             )
         return False

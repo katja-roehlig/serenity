@@ -67,6 +67,18 @@ class UserPropertyService:
             )
             raise e
 
+    async def get_all_user_data(self, db, user_id):
+        query = select(UserProperty).where(UserProperty.user_id == user_id)
+        try:
+            result = await db.execute(query)
+            return result.scalars().all()
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database connection error for user {user_id}: {e}",
+                exc_info=True,
+            )
+            raise e
+
     async def add_data(self, db, user_property: UserProfile):
         db.add(user_property)
         try:

@@ -44,6 +44,19 @@ class UserRead(NewBaseModel):
         from_attributes = True
 
 
+class UserBasic(NewBaseModel):
+    id: int
+    mail: EmailStr
+    nickname: str
+    is_admin: bool
+    has_onboarding: bool
+    age: int | None = None
+    gender: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class ReturnedLoginData(NewBaseModel):
     access_token: str
     token_type: str

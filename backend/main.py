@@ -23,8 +23,10 @@ from app.schemas.api_schemas import (
     ExerciseCreate,
     ExerciseRead,
     ReturnedLoginData,
+    UserBasic,
     UserCreate,
     UserOnboarding,
+    UserProfile,
     UserRead,
 )
 from langchain_core.messages import HumanMessage
@@ -57,7 +59,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,6 +133,21 @@ async def delete_exercise(exercise_id: int, db: AsyncSession = Depends(get_db)):
         )
 
 
+@app.get("/exercise/{exercise_id}", response_model=ExerciseRead)
+async def get_exercise_by_id(exercise_id: int, db: AsyncSession = Depends(get_db)):
+    try:
+        exercise = await EXERCISE_SERVICE.get_exercise_by_id(db, exercise_id)
+        if exercise is None:
+            raise HTTPException(status_code=404, detail="Exercise not found")
+        return exercise
+    except HTTPException:
+        raise
+    except (SQLAlchemyError, VectorError) as e:
+        raise HTTPException(
+            status_code=500, detail=f"Technical error during deletion. {e}"
+        )
+
+
 @app.put("/exercise/{exercise_id}", response_model=ExerciseRead)
 async def update_exercise(
     editedEx: ExerciseCreate, exercise_id: int, db: AsyncSession = Depends(get_db)
@@ -186,7 +207,7 @@ async def login_user(
     }
 
 
-@app.get("/users/Profile", response_model=UserRead)
+@app.get("/user/profile", response_model=UserBasic)
 async def show_user_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
@@ -336,6 +357,32 @@ async def delete_dashboard_items(
         raise HTTPException(
             status_code=500,
             detail="Failed to delete item in database. Please try again.",
+        )
+
+
+@app.delete("/settings/user")
+async def delete_user(
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    user_data = await USER_PROPERTY_SERVICE.get_all_user_data(
+        db=db, user_id=current_user.id
+    )
+    item_ids = [item.id for item in user_data]
+    try:
+        success = await VECTOR_SERVICE.delete_memory(item_ids)
+        if not success:
+            raise Exception("Could not delete data from vector DB")
+        await USER_SERVICE.delete_user(
+            db=db,
+            user_id=current_user.id,
+        )
+    except (SQLAlchemyError, VectorError, ValueError) as error:
+        await db.rollback()
+        logger.error(
+            f"Failed to delete user profile {current_user.id}: {error}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Technical error during profile deletion. {error}"
         )
 
 
