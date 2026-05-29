@@ -1,0 +1,176 @@
+.onboardingContainer {
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  padding-inline: 4rem;
+}
+.greeting {
+  margin: 0;
+  color: var(--bg-elements);
+  padding: 3rem 4rem 1rem;
+  display: flex;
+  align-items: end;
+  gap: var(--space-xs);
+}
+.greetingText {
+  padding: 0rem 4rem 1rem;
+  line-height: 1.5;
+}
+.basicInformation {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8rem;
+  padding-bottom: 1rem;
+  background-color: var(--bg-surface-1);
+  max-width: 800px;
+  padding: 1rem 4rem 0;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lx);
+  box-shadow: var(--box-shadow-1);
+}
+
+.ageContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.ageInput {
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-chat-ai);
+  box-shadow: var(--box-shadow-1);
+  width: 12rem;
+  height: 6rem;
+}
+
+.genderContainer {
+  display: flex;
+  gap: 2rem;
+}
+.genderCard.selectableCard {
+  width: 12rem;
+}
+
+.selectableCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-surface-3);
+  box-shadow: var(--box-shadow-1);
+  width: 17rem;
+  padding-block: var(--space-md);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.selectableCard:hover {
+  background-color: var(--bg-surface-1);
+  border: 3px solid var(--border-color-2);
+}
+
+.selectableCard.active {
+  /* background-color: var(--orange-200); */
+  background-color: var(--bg-surface-1);
+  border: 3px solid var(--border-color-3);
+}
+
+.hiddenElement {
+  display: none;
+}
+.strengthsList {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 2rem;
+  column-gap: 2rem;
+  justify-content: space-between;
+}
+.strengthsContainer {
+  max-width: 800px;
+  background-color: var(--bg-surface-1);
+  margin-bottom: var(--space-lx);
+  padding: 1rem 4rem 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--box-shadow-1);
+}
+.ageError {
+  color: var(--error-color);
+}
+.noAgeError {
+  color: transparent;
+}
+.safeContainer {
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  background-color: var(--bg-surface-1);
+  padding: 1rem 4rem 2rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--box-shadow-1);
+}
+.textareaInput {
+  min-width: fit-content;
+  line-height: 1.5;
+  font-size: 1.6rem;
+  font-family: var(--font-text);
+  min-height: 10rem;
+  padding: var(--space-md);
+  border-radius: var(--space-md);
+  border-color: var(--border-color-1);
+  background-color: var(--white);
+  border: 3px solid transparent;
+  box-shadow:
+    inset 2px 2px 2px #00000015,
+    inset -2px -2px 2px #00000015;
+  resize: vertical;
+  cursor: pointer;
+}
+.ageInput:focus,
+.textareaInput:focus {
+  outline: none;
+  border-color: var(--bg-button-primary); /* Deine Primärfarbe */
+}
+.ageInput:focus {
+  background-color: var(--bg-surface-1);
+}
+.question {
+  font-size: 1.6rem;
+  font-family: var(--font-text);
+  font-weight: 600;
+}
+.hasContent {
+  border-color: var(--border-color-3);
+  background-color: var(--bg-surface-1);
+}
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  background-color: var(--bg-elements);
+  color: var(--bg-main);
+  box-shadow: var(--box-shadow-3);
+  padding: 1rem 6rem;
+}
+.button:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-secondary);
+  color: var(--text-start-inverted);
+}
+.buttonContainer {
+  max-width: 800px;
+  padding: 1rem 4rem 6rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.subHint {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+.subhintWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}

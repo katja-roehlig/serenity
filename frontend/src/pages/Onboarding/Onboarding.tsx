@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { api } from "../../api/axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import type { UserProfile } from "../../layouts/SerenityLayout";
+import styles from "./Onboarding.module.css";
+import { HandWavingIcon, RocketLaunchIcon } from "@phosphor-icons/react";
 
 export const Onboarding = () => {
-  const userName = localStorage.getItem("userName");
+  const [userData, triggerRefresh] =
+    useOutletContext<[UserProfile, () => Promise<void>]>();
+  const userName = userData.nickname;
+
   const strengths = [
     "empathisch",
     "kreativ",
@@ -19,24 +25,25 @@ export const Onboarding = () => {
     "bewusst",
   ];
   const [age, setAge] = useState<number | "">("");
-  const [ageError, setAgeError] = useState<string>("");
+  const [ageError, setAgeError] = useState<string>("ok");
   const [gender, setGender] = useState<string>("");
   const [userStrengths, setUserStrengths] = useState<string[]>([]);
   const [safePlace, setSafePlace] = useState<string>("");
   const navigate = useNavigate();
   const handleAge = (userAge: string) => {
-    if (userAge === "") {
-      setAge(null);
-      setAgeError("");
+    const age = userAge.trim();
+    if (age === "") {
+      setAge("");
+      setAgeError("ok");
       return;
     }
-    const num = Number(userAge);
+    const num = Number(age);
     setAge(num);
     if (num < 18) {
       setAgeError("Du musst 18 Jahre alt sein");
     } else if (num > 110) {
       setAgeError(`Bist du wirklich ${num} Jahre alt?`);
-    } else setAgeError("");
+    } else setAgeError("ok");
   };
 
   const handleStrength = (choosenStrength: string) => {
@@ -57,11 +64,12 @@ export const Onboarding = () => {
       age: age,
       gender: gender ? gender : null,
       strengths: userStrengths,
-      safe_place: safePlace,
+      safe_place: safePlace.trim(),
     };
     try {
       const response = await api.post("/onboarding", data);
       console.log("Erfolg:", response.data);
+      await triggerRefresh();
       alert("Juhuu das hat geklappt");
       navigate("/chat");
     } catch (error) {
@@ -70,86 +78,129 @@ export const Onboarding = () => {
     }
   };
   return (
-    <main>
-      <h1>Huhuu {userName}</h1>
-      <p>Schön, dass du da bist</p>
-      <p>
-        Um gleich richtig gut, für dich da sein zu können, brauchen wir ein paar
-        Infos über dich.
+    <main className={styles.onboardingContainer}>
+      <h2 className={styles.greeting}>
+        Huhuu {userName} <HandWavingIcon size={32} />
+      </h2>
+      <p className={styles.greetingText}>
+        Schön, dass du da bist!
+        <br />
+        Lass uns zunächst ein paar Infos sammeln, damit Serenity gleich weiß,
+        wer du bist.
       </p>
       <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="age">Wie alt bist du? </label>
-          <input
-            type="number"
-            name="age"
-            id="age"
-            max="110"
-            value={age || ""}
-            onChange={(e) => handleAge(e.target.value)}
-          />
-          {ageError && <p>{ageError}</p>}
+        <section className={styles.basicInformation}>
+          <div className={styles.ageContainer}>
+            <label htmlFor="age">
+              <h3 className={styles.question}>Wie alt bist du?</h3>
+            </label>
+            <input
+              className={`${styles.ageInput} ${age ? styles.hasContent : ""}`}
+              type="number"
+              name="age"
+              id="age"
+              max="110"
+              value={age || ""}
+              onChange={(e) => handleAge(e.target.value)}
+            />
+            <p
+              className={`${ageError === "ok" ? styles.noAgeError : styles.ageError}`}
+            >
+              {ageError}
+            </p>
+          </div>
+          <div>
+            <h3 className={styles.question}>Wie siehst du dich?</h3>
+            <div className={styles.genderContainer}>
+              <label
+                className={`${styles.selectableCard} ${styles.genderCard} ${gender === "männlich" ? styles.active : ""}`}
+              >
+                <input
+                  className={styles.hiddenElement}
+                  type="radio"
+                  name="gender"
+                  id="m"
+                  value="männlich"
+                  onChange={(e) => setGender(e.target.value)}
+                />
+                männlich
+              </label>
+              <label
+                htmlFor="w"
+                className={`${styles.selectableCard} ${styles.genderCard} ${gender === "weiblich" ? styles.active : ""}`}
+              >
+                <input
+                  className={styles.hiddenElement}
+                  type="radio"
+                  name="gender"
+                  id="w"
+                  value="weiblich"
+                  onChange={(e) => setGender(e.target.value)}
+                />
+                weiblich
+              </label>
+              <label
+                htmlFor="divers"
+                className={`${styles.selectableCard} ${styles.genderCard} ${gender === "divers" ? styles.active : ""}`}
+              >
+                <input
+                  className={styles.hiddenElement}
+                  type="radio"
+                  name="gender"
+                  id="divers"
+                  value="divers"
+                  onChange={(e) => setGender(e.target.value)}
+                />
+                divers
+              </label>
+            </div>
+          </div>
+        </section>
+        <section className={styles.strengthsContainer}>
+          <div className={styles.subhintWrapper}>
+            <h3 className={styles.question}>Was kennst du von dir?</h3>
+            <p className={styles.subHint}>Wähle bis zu 8 Eigenschaften aus</p>
+          </div>
+          <ul className={styles.strengthsList}>
+            {strengths.map((strength) => (
+              <li
+                key={strength}
+                className={`${styles.selectableCard} ${userStrengths.includes(strength) ? styles.active : ""}`}
+              >
+                <input
+                  className={styles.hiddenElement}
+                  type="checkbox"
+                  name=""
+                  id={strength}
+                  checked={userStrengths.includes(strength)}
+                  onChange={() => handleStrength(strength)}
+                />
+                <label htmlFor={strength}>{strength}</label>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className={styles.safeContainer}>
+          <label htmlFor="safe_place">
+            <h3 className={styles.question}>
+              Wo fühlst du dich richtig wohl? Beschreibe den Ort.
+            </h3>
+          </label>
+          <textarea
+            className={`${styles.textareaInput} ${safePlace ? styles.hasContent : ""}`}
+            name="safePlace"
+            id="safePlace"
+            value={safePlace}
+            onChange={(event) => setSafePlace(event.target.value)}
+            placeholder="z.B. Ein ruhiger Wald, mein Bett bei Regen, das Meer..."
+          ></textarea>
+        </section>
+        <div className={styles.buttonContainer}>
+          <button type="submit" className={styles.button}>
+            <RocketLaunchIcon size={32} />
+            Los geht´s
+          </button>
         </div>
-        <div>
-          <p>Wie siehst du dich?</p>
-          <label htmlFor="m">
-            <input
-              type="radio"
-              name="gender"
-              id="m"
-              value="männlich"
-              onChange={(e) => setGender(e.target.value)}
-            />
-            m
-          </label>
-          <label htmlFor="w">
-            <input
-              type="radio"
-              name="gender"
-              id="w"
-              value="weiblich"
-              onChange={(e) => setGender(e.target.value)}
-            />
-            w
-          </label>
-          <label htmlFor="divers">
-            <input
-              type="radio"
-              name="gender"
-              id="divers"
-              value="divers"
-              onChange={(e) => setGender(e.target.value)}
-            />
-            divers
-          </label>
-        </div>
-
-        <p>Was kennst du von dir?</p>
-        <ul>
-          {strengths.map((strength) => (
-            <li key={strength}>
-              <input
-                type="checkbox"
-                name=""
-                id={strength}
-                checked={userStrengths.includes(strength)}
-                onChange={() => handleStrength(strength)}
-              />
-              <label htmlFor={strength}>{strength}</label>
-            </li>
-          ))}
-        </ul>
-
-        <label htmlFor="safe_place">
-          Wo fühlst du dich richtig wohl? Beschreibe den Ort.
-        </label>
-        <textarea
-          name="safePlace"
-          id="safePlace"
-          value={safePlace}
-          onChange={(event) => setSafePlace(event.target.value)}
-        ></textarea>
-        <button type="submit">Abschicken</button>
       </form>
     </main>
   );
