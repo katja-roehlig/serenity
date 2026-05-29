@@ -1,14 +1,15 @@
-import { Link } from "react-router-dom";
 import styles from "./Header.module.css";
+import Logo from "../../assets/Logo-dark.svg?react";
 
 export const Header = () => {
   return (
     <div className={styles.header}>
-      <h1>Serenity</h1>
-      <nav>
-        <Link to="/">Home</Link>
-        <Link to="/exercise/add">Übung hinzufügen</Link>
-      </nav>
+      <div className={styles.logContainer}>
+        <div className={styles.logoContainer}>
+          <h1 className={styles.logoText}>serenity</h1>
+          <Logo className={styles.logo} />
+        </div>
+      </div>
     </div>
   );
 };
