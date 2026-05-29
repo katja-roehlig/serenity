@@ -1,0 +1,7 @@
+.main {
+  background-color: var(--bg-main);
+  padding-top: 4rem;
+  display: flex;
+  justify-content: center;
+  min-height: 100%;
+}
