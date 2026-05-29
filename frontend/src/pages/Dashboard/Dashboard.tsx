@@ -1,18 +1,28 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/axios";
 import { DashboardSection } from "../../components/DashboardSection/DashboardSection";
+import styles from "./Dashboard.module.css";
+import Masonry from "react-masonry-css";
 
 export interface DashboardCategory {
   id: string;
   content: string;
-  reasoning?: string[];
+  reasoning?: string[] | null;
   createdAt: string;
   expiresAt: string | null;
 }
+
 type DashboardData = Record<string, DashboardCategory[]>;
 
+interface FormattedCategoryList {
+  key: string;
+  title: string;
+  data: DashboardCategory[];
+}
+
 export const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState<DashboardData>({
+  const [sortedList, setSortedList] = useState<FormattedCategoryList[]>([]);
+  const [_dashboardData, setDashboardData] = useState<DashboardData>({
     currentSituation: [],
     memory: [],
     safePlace: [],
@@ -22,29 +32,59 @@ export const Dashboard = () => {
     pattern: [],
   });
 
+  const breakpointColumnsObj = {
+    default: 2, // screen >= 1100
+    960: 1, // screen < 768
+  };
+
+  const translationDictionary: Record<string, string> = {
+    currentSituation: "Aktuelle Situation",
+    strengths: "Stärken",
+    memory: "Erinnerungen",
+    safePlace: "Sicherer Ort",
+    goal: "Ziele",
+    belief: "Glaubenssätze",
+    pattern: "Muster",
+  };
+
+  const getDashboardData = async (): Promise<DashboardData | undefined> => {
+    try {
+      const response = await api.get("/dashboard");
+      console.log("Juhuu, das hat geklappt:", response.data);
+      const backendData = response.data;
+      setDashboardData(backendData);
+      return backendData;
+    } catch (error) {
+      console.error(error);
+      alert("Da ist etwas schief gelaufen.");
+      return undefined;
+    }
+  };
+
+  const formatDashboardData = (backendData: DashboardData) => {
+    //aus Backend-Objekt wird eine Liste
+    const categoriesList = Object.entries(backendData).map(([key, value]) => {
+      return {
+        key: key,
+        title: translationDictionary[key] || key,
+        data: value || [],
+      };
+    });
+    const sortedCategoriesList = [...categoriesList].sort((a, b) => {
+      return b.data.length - a.data.length;
+    });
+    setSortedList(sortedCategoriesList);
+  };
+
   useEffect(() => {
-    const getDashboardData = async () => {
-      try {
-        const response = await api.get("/dashboard");
-        console.log("Juhuu, das hat geklappt:", response.data);
-        setDashboardData(response.data);
-      } catch (error) {
-        console.error(error);
-        alert("Da ist etwas schief gelaufen.");
+    const processData = async () => {
+      const backendData = await getDashboardData();
+      if (backendData) {
+        formatDashboardData(backendData);
       }
     };
-    getDashboardData();
+    processData();
   }, []);
-
-  const {
-    currentSituation,
-    memory,
-    safePlace,
-    strengths,
-    goal,
-    belief,
-    pattern,
-  } = dashboardData;
 
   const handleDelete = async (id: string, category: string) => {
     const check = window.confirm("Möchtest du diese Übung wirklich löschen?");
@@ -59,7 +99,8 @@ export const Dashboard = () => {
     } catch (error: any) {
       console.error(error);
       const error_message = error.response?.data?.detail;
-      //   mein Backend_Fehlertext von HTTPException(status_code=404, detail="No item found with for this user")  liegt in  error.response.data.detail
+      //   der Fehlertext  aus dem Backend von HTTPException(status_code=404,
+      // detail="No item found with for this user")  liegt in  error.response.data.detail
       alert(
         error_message ||
           "Da ist etwas schief gelaufen beim Speichern der Übung",
@@ -67,50 +108,25 @@ export const Dashboard = () => {
     }
   };
   return (
-    <main>
-      <DashboardSection
-        title="Aktuelle Situation"
-        property={currentSituation}
-        category="current_situation"
-        handleDelete={handleDelete}
-      />
-      <DashboardSection
-        title="Stärken"
-        property={strengths}
-        category="strengths"
-        handleDelete={handleDelete}
-      />
-
-      <DashboardSection
-        title="Erinnerungen"
-        property={memory}
-        category="memory"
-        handleDelete={handleDelete}
-      />
-      <DashboardSection
-        title="Sicherer Ort"
-        property={safePlace}
-        category="safePlace"
-        handleDelete={handleDelete}
-      />
-      <DashboardSection
-        title="Ziele"
-        property={goal}
-        category="goal"
-        handleDelete={handleDelete}
-      />
-      <DashboardSection
-        title="Glaubenssätze"
-        property={belief}
-        category="belief"
-        handleDelete={handleDelete}
-      />
-      <DashboardSection
-        title="Muster"
-        property={pattern}
-        category="pattern"
-        handleDelete={handleDelete}
-      />
+    <main className={styles.main}>
+      <h2>Dein Dashboard</h2>
+      <Masonry
+        breakpointCols={breakpointColumnsObj}
+        className={styles.myMasonryGrid}
+        columnClassName={styles.myMasonryGridColumn}
+      >
+        {sortedList.map((categoryItem) => {
+          return (
+            <DashboardSection
+              key={categoryItem.key}
+              title={categoryItem.title}
+              category={categoryItem.key}
+              property={categoryItem.data}
+              handleDelete={handleDelete}
+            />
+          );
+        })}
+      </Masonry>
     </main>
   );
 };

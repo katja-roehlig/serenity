@@ -1,0 +1,29 @@
+.main {
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Haupt-Grid */
+.myMasonryGrid {
+  display: flex;
+  width: auto;
+  column-gap: 3rem;
+  margin-left: 4rem;
+  margin-right: 4rem;
+  /*margin-left: -3rem;  Gleicht den Gap der Spalten aus */
+}
+
+/* einzelnenSpalten */
+/* .myMasonryGridColumn {
+/*padding-right: 2rem; /* Abstand (Gap) zwischen den Spalten */
+/* background-clip: padding-box; */
+/* max-width: 350px} */
+
+/* Jede Sektion innerhalb der Spalten */
+.myMasonryGridColumn > * {
+  /*margin-bottom: 3rem; /* Abstand zwischen den Sektionen untereinander */
+  /* display: inline-block; */
+  max-width: 100%;
+  /* width: 100%; */
+}

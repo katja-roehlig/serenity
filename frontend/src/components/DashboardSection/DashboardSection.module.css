@@ -1,0 +1,124 @@
+.sectionContainer {
+  margin-bottom: 2rem;
+  cursor: pointer;
+  box-shadow: var(--box-shadow-1);
+}
+
+.sectionHeader,
+.contentContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sectionHeader {
+  height: 92px;
+  background-image: linear-gradient(
+    -90deg,
+    var(--bg-surface-2),
+    var(--bg-surface-3) 75%
+  );
+  padding: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  cursor: pointer;
+}
+.categoryContainer {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+.contentLength {
+  font-size: 1.4rem;
+  margin-left: -0.4rem;
+  color: var(--text-muted);
+}
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+  column-gap: 1.8rem;
+  row-gap: 1rem;
+  padding-top: 2rem;
+  background-color: var(--bg-surface-1);
+}
+.rowList {
+  background-color: var(--bg-surface-1);
+}
+.cardContainer,
+.rowContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rowContainer {
+  padding: var(--space-md);
+  padding-right: 0;
+  border-bottom: 1px solid var(--border-color-2);
+  background-color: var(--bg-surface-1);
+  margin-bottom: 2rem;
+}
+.rowContainer,
+.cardContainer {
+  border: 3px solid var(--bg-button-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background-color: var(--bg-surface-1);
+  box-shadow: var(--box-shadow-2);
+}
+.content {
+  margin: 0;
+  flex-basis: 85%;
+}
+.icon {
+  flex-basis: 15%;
+  padding: 0;
+}
+.dropdownContent {
+  background-color: var(--bg-surface-1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--box-shadow-1);
+  border: 1px solid var(--bg-secondary);
+}
+.dropdownItem {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-inline: var(--space-lg);
+  padding-block: var(--space-md);
+  border-bottom: 1px dotted var(--border-color-3);
+  transition:
+    font-size 0.1s ease,
+    transform 0.1s ease;
+  transform-origin: center;
+}
+.dropdownItem:last-child {
+  border-bottom-color: transparent;
+}
+.dropdownContent [data-highlighted] {
+  outline: none;
+  background-color: var(--bg-secondary);
+  transform: scale(1.03);
+}
+.sectionContainer:hover .sectionHeader {
+  background-image: linear-gradient(
+    -90deg,
+    var(--bg-surface-2),
+    var(--bg-secondary) 75%
+  );
+}
+.buttonContainer {
+  grid-column: span 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: var(--space-lg);
+}
+.loadMoreButton {
+  padding: 1rem 2rem;
+  background-color: var(--text-primary);
+  color: var(--bg-main);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
