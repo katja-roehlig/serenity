@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
+import styles from "./Login.module.css";
 
 export const Login = () => {
   const [mail, setMail] = useState("");
@@ -16,9 +17,9 @@ export const Login = () => {
     try {
       const response = await api.post("/login", formData);
       const token: string = response.data.accessToken;
-      const nickname: string = response.data.nickname;
+      // const nickname: string = response.data.nickname;
       localStorage.setItem("token", token);
-      localStorage.setItem("userName", nickname);
+      //localStorage.setItem("userName", nickname);
       console.log("Erfolg:", response.data);
       if (response.data.hasOnboarding === true) {
         navigate("/chat");
@@ -32,12 +33,18 @@ export const Login = () => {
     }
   };
   return (
-    <main>
-      <h1>Logge dich ein</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="mail">Deine Mailadresse: </label>
+    <div className={styles.loginContainer}>
+      <p className={styles.greeting}>
+        Schön, <br />
+        dass du da bist!
+      </p>
+      <form onSubmit={handleSubmit} className={styles.formContainer}>
+        <div className={styles.inputContainer}>
+          <label className={styles.label} htmlFor="mail">
+            Deine Mailadresse:
+          </label>
           <input
+            className={styles.input}
             type="email"
             name="mail"
             id="mail"
@@ -45,9 +52,12 @@ export const Login = () => {
             onChange={(event) => setMail(event.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="password">Dein Passwort: </label>
+        <div className={styles.inputContainer}>
+          <label htmlFor="password" className={styles.label}>
+            Dein Passwort:{" "}
+          </label>
           <input
+            className={styles.input}
             type="password"
             name="password"
             id="password"
@@ -55,12 +65,10 @@ export const Login = () => {
             onChange={(event) => setPassword(event.target.value)}
           />
         </div>
-        <button type="submit">Los geht´s</button>
+        <button type="submit" className={styles.button}>
+          Los geht´s
+        </button>
       </form>
-      <br />
-      <Link to="/">Home</Link>
-      <br />
-      <Link to="/">Registrieren</Link>
-    </main>
+    </div>
   );
 };

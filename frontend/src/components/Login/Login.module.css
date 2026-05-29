@@ -1,0 +1,60 @@
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-text);
+  color: var(--text-logo-light);
+  font-weight: 300;
+  font-size: 1.4rem;
+  width: 100%;
+}
+
+.label {
+  margin-left: 0.5rem;
+  margin-bottom: var(--space-sm);
+}
+.input {
+  width: 100%;
+  background-color: rgb(231, 233, 234);
+  border: 2px solid var(--blue-400);
+}
+.loginContainer {
+  width: 100%;
+  margin-top: 2rem;
+  padding-inline: var(--space-md);
+  margin-bottom: 4rem;
+}
+
+.button {
+  font-size: 1.6rem;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  padding: 1rem 6rem;
+  border-radius: var(--radius-md);
+  align-self: center;
+  width: auto;
+  background-color: var(--blue-400);
+  border: none;
+  margin-top: 1rem;
+  box-shadow: 2px 2px 4px #000000;
+  color: var(--text-start-inverted);
+}
+.button:hover {
+  transform: scale(1.1);
+  background-color: var(--orange-200);
+}
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: var(--space-lx);
+}
+.greeting {
+  color: var(--text-start);
+  font-size: 25px;
+  font-family: "Rubik";
+  font-weight: 400;
+  text-align: center;
+  line-height: 40px;
+  margin-bottom: 6rem;
+}

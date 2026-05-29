@@ -1,0 +1,61 @@
+.landingPage {
+  /* background-color: rgb(114, 114, 222); */
+  background-color: var(--bg-elements);
+  background-image: url("../../assets/LandingPage.avif");
+  background-size: cover;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  min-height: 100vh;
+  width: 100%;
+  overscroll-behavior: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logContainer {
+  width: 90%;
+  max-width: 440px;
+  min-width: 400px;
+  height: 80vh;
+  min-height: fit-content;
+  background-image: linear-gradient(
+    var(--bg-start-transparent),
+    var(--bg-start) 75%
+  );
+  border-radius: 15px;
+  margin-right: var(--space-xxl);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  box-shadow: -4px -4px 16px #0000002c;
+}
+.logo {
+  width: 5rem;
+  height: 5rem;
+}
+.logoText {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--text-logo-light);
+}
+.logoContainer {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+  margin-top: var(--space-md);
+  margin-right: var(--space-md);
+}
+.lpText {
+  color: var(--text-start);
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  letter-spacing: 5%;
+}
+.textContainer {
+  align-self: end;
+  margin-left: var(--space-xxl);
+  margin-bottom: var(--space-xxl);
+}
