@@ -1,64 +1,122 @@
-.messageList {
-  list-style: none;
-  padding-left: 0;
+.chatContainer {
   display: flex;
-  flex-direction: column;
+  background-color: var(--bg-main);
+  height: calc(100vh - 63px);
+  overflow-y: auto;
 }
 
+.messageList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  padding-inline: 8rem 2rem;
+  padding-bottom: 150px;
+}
+.layoutWrapper {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.spacer {
+  width: 15vw;
+  height: 200px;
+}
 .messageList li {
   width: 100%;
 }
 
 .chatBubble {
   padding: 20px;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  max-width: 70%;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  max-width: 600px;
+  width: fit-content;
   margin-bottom: 30px;
   line-height: 1.5;
+  word-wrap: break-word;
 }
 
 .userChat {
-  background-color: #ffedd6;
+  background-color: var(--bg-surface-4);
   margin-left: auto;
-  border-bottom-left-radius: 20px;
-  box-shadow: 2px 2px 8px #d6d6d6;
+  border-bottom-right-radius: var(--radius-lg);
+  box-shadow: 2px 2px 8px #00000010;
 }
 
 .kiChat {
-  background-color: rgb(233, 237, 254);
-  border-bottom-right-radius: 20px;
-  box-shadow: -2px 2px 8px #d6d6d6;
+  background-color: var(--bg-surface-3);
+  border-bottom-left-radius: var(--radius-lg);
+  box-shadow: -2px 2px 8px #00000010;
 }
 
 .label {
   display: none;
 }
 .input {
-  width: 70%;
-  height: 50px;
-  padding: 20px;
-  border-radius: 20px;
-  border-color: rgb(218, 218, 218);
-  font-family: sans-serif;
-  font-size: 16px;
-  margin-bottom: 10px;
+  flex: 1;
+  width: 700px;
+  min-width: fit-content;
+  line-height: 1.5;
+  font-size: 1.6rem;
+  font-family: var(--font-text);
+  /* height: fit-content; */
+  padding: var(--space-md);
+  border-radius: var(--space-md);
+  border-color: var(--border-color-1);
+  background-color: var(--white);
+  border: none;
+  box-shadow:
+    inset 2px 2px 2px #00000015,
+    inset -2px -2px 2px #00000015;
 }
 
 .formContainer {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
+  justify-content: center;
+  align-items: start;
+  align-self: center;
+  position: fixed;
+  left: calc(20vw);
+  /* right: 15vw; */
+  bottom: 0;
+  right: 0;
+  width: auto;
+  padding-block: 1.5rem;
+
+  background-color: white;
+}
+.writingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: 8rem;
 }
 .submitButton {
-  padding: 5px 40px;
-  border-radius: 20px;
-  border: none;
-  background-color: rgb(128, 150, 248);
-  color: rgb(218, 218, 218);
+  background-color: var(--bg-elements);
+  padding-block: var(--space-sm);
+  color: var(--bg-main);
   box-shadow: -2px 2px 6px #d6d6d6;
+  align-self: end;
+  padding: 1rem 6rem;
+}
+.button:hover {
+  transform: scale(1.1);
+  background-color: var(--orange-200);
 }
 .submitButton:disabled {
   background-color: rgb(233, 236, 249);
+}
+.warning {
+  position: relative;
+}
+.warning::after {
+  content: "Serenity kann Fehler machen. Überprüfe wichtige Infos.";
+  color: var(--text-muted);
+  font-size: 12px;
+  position: absolute;
+  bottom: -15px;
+  left: 10px;
 }
