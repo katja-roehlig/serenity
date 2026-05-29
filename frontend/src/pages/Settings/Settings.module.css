@@ -1,0 +1,90 @@
+.settingsContainer {
+  background-color: var(--bg-main);
+  min-height: 100%;
+  padding: var(--space-lg);
+  padding-left: var(--space-xl);
+}
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+.sectionHeading {
+  padding: 0;
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+}
+.dataContainer {
+  background-color: var(--bg-surface-1);
+  margin-bottom: var(--space-lx);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  max-width: 800px;
+  box-shadow: var(--box-shadow-1);
+}
+.itemContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid var(--border-color-1);
+  padding-block: var(--space-md);
+  padding-right: var(--space-md);
+  cursor: pointer;
+}
+
+.itemContainer:hover {
+  color: var(--text-primary);
+}
+
+.itemContainer:hover .icon {
+  transform: scale(1.1);
+}
+.last {
+  border-bottom-color: transparent;
+}
+.firstParagraph {
+  flex: 0 0 45%;
+  margin: 0;
+  font-weight: 600;
+}
+.secondParagraph {
+  flex: 1;
+  margin: 0;
+  text-align: left;
+}
+.icon {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.profileDeleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 1rem 4rem;
+  background-color: var(--text-primary);
+  color: var(--bg-main);
+  margin-inline: auto;
+  box-shadow: var(--box-shadow-3);
+}
+.profileDeleteButton:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-secondary);
+  color: var(--text-start-inverted);
+}
+.linkContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+.link:hover {
+  color: var(--text-primary);
+}
