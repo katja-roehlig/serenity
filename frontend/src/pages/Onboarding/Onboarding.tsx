@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import type { UserProfile } from "../../layouts/SerenityLayout";
 import styles from "./Onboarding.module.css";
 import { HandWavingIcon, RocketLaunchIcon } from "@phosphor-icons/react";
+import toast from "react-hot-toast";
 
 export const Onboarding = () => {
   const [userData, triggerRefresh] =
@@ -51,8 +52,8 @@ export const Onboarding = () => {
       setUserStrengths((prev) =>
         prev.filter((strength) => strength !== choosenStrength),
       );
-    } else if (userStrengths.length > 8) {
-      alert("Wähle maximal acht Eigenschaften");
+    } else if (userStrengths.length >= 8) {
+      toast.success("Wähle maximal acht Eigenschaften.");
     } else {
       setUserStrengths((prev) => [...prev, choosenStrength]);
     }
@@ -70,11 +71,13 @@ export const Onboarding = () => {
       const response = await api.post("/onboarding", data);
       console.log("Erfolg:", response.data);
       await triggerRefresh();
-      alert("Juhuu das hat geklappt");
+      toast.success("Willkommen an Board!");
       navigate("/chat");
     } catch (error) {
       console.error(error);
-      alert("Da ist etwas schief gelaufen beim Speichern");
+      toast.error(
+        "Da ist etwas schief gelaufen beim Onboarding. Versuche später es noch einmal!",
+      );
     }
   };
   return (
@@ -167,15 +170,17 @@ export const Onboarding = () => {
                 key={strength}
                 className={`${styles.selectableCard} ${userStrengths.includes(strength) ? styles.active : ""}`}
               >
-                <input
-                  className={styles.hiddenElement}
-                  type="checkbox"
-                  name=""
-                  id={strength}
-                  checked={userStrengths.includes(strength)}
-                  onChange={() => handleStrength(strength)}
-                />
-                <label htmlFor={strength}>{strength}</label>
+                <label htmlFor={strength}>
+                  <input
+                    className={styles.hiddenElement}
+                    type="checkbox"
+                    name=""
+                    id={strength}
+                    checked={userStrengths.includes(strength)}
+                    onChange={() => handleStrength(strength)}
+                  />
+                  {strength}
+                </label>
               </li>
             ))}
           </ul>

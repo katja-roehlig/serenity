@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Register.module.css";
 import { SignInIcon } from "@phosphor-icons/react";
+import toast from "react-hot-toast";
 
 export const Register = () => {
   const [name, setName] = useState("");
@@ -18,11 +19,11 @@ export const Register = () => {
         password: password,
       });
       console.log("Erfolg:", response.data);
-      alert("Juhuu das hat geklappt");
+      toast.success("Juhuu, das hat geklappt 🙃");
       navigate("/login");
     } catch (error) {
       console.error(error);
-      alert("Da ist etwas schief gelaufen");
+      toast.error("Da ist etwas schief gelaufen. Versuche es noch einmal!");
     }
   };
   return (

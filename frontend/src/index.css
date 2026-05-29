@@ -144,6 +144,17 @@ h3 {
   font-weight: 600;
   font-size: 1.6rem;
 }
+.toast {
+  padding: 20px !important;
+}
+
+.toast-success {
+  border: 3px solid rgb(2, 177, 2) !important;
+}
+.toast-error {
+  border: 3px solid red !important;
+}
+
 /* fonts **************************************************/
 
 @font-face {

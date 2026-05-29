@@ -3,6 +3,7 @@ import { api } from "../../api/axios";
 import styles from "./Exercise.module.css";
 import { EyeIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export interface ExerciseData {
   id: number;
@@ -39,9 +40,12 @@ export const Exercise = () => {
       setExercises((prev) =>
         prev.filter((exercise) => exercise.id !== deleteId),
       );
+      toast.success("Die Übung wurde erfolgreich gelöscht.");
     } catch (error) {
       console.error(error);
-      alert("Da ist etwas schief gelaufen beim Speichern der Übung");
+      toast.error(
+        "Da ist etwas schief gelaufen beim Löschen der Übung. Versuche es später noch einmal!",
+      );
     }
   };
 

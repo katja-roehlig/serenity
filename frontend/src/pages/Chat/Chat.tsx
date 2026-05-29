@@ -4,6 +4,8 @@ import styles from "./Chat.module.css";
 import { CheckFatIcon } from "@phosphor-icons/react";
 import { useOutletContext } from "react-router-dom";
 import type { UserProfile } from "../../layouts/SerenityLayout";
+import toast from "react-hot-toast";
+import ReactMarkdown from "react-markdown";
 
 type ChatItem = { id: string; role: string; content: string };
 
@@ -18,7 +20,7 @@ export const Chat = () => {
       {
         id: Date.now().toString(),
         role: "assistant",
-        content: `Hey ${userName}! Ich bin Serenity, dein persönlicher Coach. Wie geht es dir heute?`,
+        content: `Hey **${userName}**!  \n\nIch bin Serenity, dein persönlicher Coach.  \nWie geht es dir heute?`,
       },
     ];
   });
@@ -61,11 +63,13 @@ export const Chat = () => {
         setMessages(allMessages);
       } else {
         console.error("Error: The response from the server is incomplete");
-        alert("Serenity ist gerade sprachlos. Bitte versuche es nocheinmal.");
+        toast.error(
+          "Serenity ist gerade sprachlos. Bitte versuche es noch einmal!",
+        );
       }
     } catch (error) {
       console.error(error);
-      alert("Da ist etwas schief gelaufen.");
+      toast.error("Da ist etwas schief gelaufen. Versuche es noch einmal!");
     } finally {
       setIsWaiting(false);
       cursorRef.current?.focus();
@@ -82,7 +86,13 @@ export const Chat = () => {
                 className={`${styles.chatBubble}
              ${message.role == "user" ? styles.userChat : styles.kiChat}`}
               >
-                {message.content}
+                {message.role === "user" ? (
+                  message.content
+                ) : (
+                  <div className={styles.markdownContent}>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                )}
               </div>
             </li>
           ))}

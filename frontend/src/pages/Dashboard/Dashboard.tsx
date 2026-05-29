@@ -3,6 +3,7 @@ import { api } from "../../api/axios";
 import { DashboardSection } from "../../components/DashboardSection/DashboardSection";
 import styles from "./Dashboard.module.css";
 import Masonry from "react-masonry-css";
+import toast from "react-hot-toast";
 
 export interface DashboardCategory {
   id: string;
@@ -56,7 +57,9 @@ export const Dashboard = () => {
       return backendData;
     } catch (error) {
       console.error(error);
-      alert("Da ist etwas schief gelaufen.");
+      toast.error(
+        "Deine Daten konnten nicht geladen werden. Versuche es später noch einmal!",
+      );
       return undefined;
     }
   };
@@ -87,11 +90,13 @@ export const Dashboard = () => {
   }, []);
 
   const handleDelete = async (id: string, category: string) => {
-    const check = window.confirm("Möchtest du diese Übung wirklich löschen?");
+    const check = window.confirm(
+      "Möchtest du diesen Eintrag wirklich löschen?",
+    );
     if (!check) return;
     try {
       await api.delete(`/dashboard/delete/${id}`);
-      alert("Juhuu das hat geklappt");
+      toast.success("Der Eintrag wurde erfolgreich gelöscht.");
       setDashboardData((prevData) => ({
         ...prevData,
         [category]: prevData[category]?.filter((item) => item.id !== id),
@@ -101,7 +106,7 @@ export const Dashboard = () => {
       const error_message = error.response?.data?.detail;
       //   der Fehlertext  aus dem Backend von HTTPException(status_code=404,
       // detail="No item found with for this user")  liegt in  error.response.data.detail
-      alert(
+      toast.error(
         error_message ||
           "Da ist etwas schief gelaufen beim Speichern der Übung",
       );

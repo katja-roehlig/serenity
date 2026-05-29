@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ExerciseForm } from "../../components/ExerciseForm/ExerciseForm";
 import { PencilSimpleLineIcon } from "@phosphor-icons/react";
 import type { ExerciseData } from "../Exercise/Exercise";
+import toast from "react-hot-toast";
 
 export const ExerciseShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,12 +31,12 @@ export const ExerciseShow = () => {
     try {
       const response = await api.put(`/exercise/${id}`, updatedData);
       console.log("Erfolg:", response.data);
-      alert("Juhuu das hat geklappt");
+      toast.success("Die Übung wurde geändert.");
       setExercise(response.data);
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update exercise", error);
-      alert("Da ist etwas schief gelaufen beim Speichern der Übung");
+      toast.error("Da ist etwas schief gelaufen beim Speichern der Übung");
     }
   };
   if (!exercise) return <div>Übung wird geladen...</div>;

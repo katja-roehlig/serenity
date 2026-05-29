@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import styles from "./Login.module.css";
+import toast from "react-hot-toast";
 
 export const Login = () => {
   const [mail, setMail] = useState("");
@@ -26,10 +27,10 @@ export const Login = () => {
       } else {
         navigate("/onboarding");
       }
-      alert("Du wurdest erfolgreich eingeloggt!");
+      toast.success("Yeah - gleich geht es los!");
     } catch (error) {
       console.error("Login fehlgeschlagen:", error);
-      alert("Da ist etwas schief gelaufen");
+      toast.error("Da ist etwas schief gelaufen");
     }
   };
   return (

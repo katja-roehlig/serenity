@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage/LandingPage";
-
 import { NotFound } from "./pages/NotFound/NotFound";
 import { Login } from "./components/Login/Login";
 import { Onboarding } from "./pages/Onboarding/Onboarding";
@@ -12,14 +11,27 @@ import { ExerciseShow } from "./pages/ExerciseShow/ExerciseShow";
 import { SerenityLayout } from "./layouts/SerenityLayout";
 import { Register } from "./components/Register/Register";
 import { Settings } from "./pages/Settings/Settings";
-import { DashboardTest } from "./pages/Dashboard/DashboardTest";
 import { TermsOfUse } from "./pages/TermsOfUse/TermsOfUse";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy/PrivacyPolicy";
 import { Impressum } from "./pages/Impressum/Impressum";
+import { Toaster } from "react-hot-toast";
 
 export function App() {
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        toastOptions={{
+          className: "toast",
+          success: {
+            className: "toast-success",
+          },
+          error: {
+            className: "toast-error",
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={<LandingPage />}>
           <Route index element={<Register />} />
@@ -30,8 +42,6 @@ export function App() {
         <Route element={<SerenityLayout />}>
           <Route path="/chat" element={<Chat />} />
           <Route path="/onboarding" element={<Onboarding />} />
-
-          <Route path="/dashboard/now" element={<DashboardTest />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/exercise/add" element={<AddExercise />} />
           <Route path="/exercise/:id" element={<ExerciseShow />} />

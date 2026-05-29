@@ -8,6 +8,7 @@ import {
   UserIcon,
 } from "@phosphor-icons/react";
 import { api } from "../../api/axios";
+import toast from "react-hot-toast";
 
 export const Settings = async () => {
   // Holt die Daten direkt aus dem Outlet-Kontext von SerenityLayout
@@ -20,11 +21,11 @@ export const Settings = async () => {
     if (!check) return;
     try {
       await api.delete("/settings/user");
-      alert("Dein Profil wurde erfolgreich gelöscht");
+      toast.success("Dein Profil wurde erfolgreich gelöscht");
       navigate("/");
     } catch (error) {
       console.error(error);
-      alert(
+      toast.error(
         "Fehler beim Löschen deines Profils. Bitte versuche es später noch einmal.",
       );
     }

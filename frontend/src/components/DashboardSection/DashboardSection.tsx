@@ -19,7 +19,6 @@ import {
   ShieldCheckIcon,
   TrashIcon,
   TreeStructureIcon,
-  VirusIcon,
 } from "@phosphor-icons/react";
 
 export const DashboardSection = ({
