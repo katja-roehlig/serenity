@@ -1,0 +1,60 @@
+.exContainer {
+  padding: var(--space-lx);
+  padding-left: var(--space-xl);
+  background-color: var(--bg-main);
+  min-height: 100%;
+}
+.section {
+  max-width: 800px;
+  background-color: var(--bg-surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--box-shadow-1);
+
+  margin-bottom: var(--space-lg);
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  background-image: linear-gradient(
+    -90deg,
+    var(--bg-surface-2),
+    var(--bg-surface-3) 75%
+  );
+  padding: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+.content {
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+  line-height: 1.5;
+}
+.noData {
+  font-style: italic;
+  color: var(--text-muted);
+}
+.buttonContainer {
+  max-width: 800px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-xl);
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  background-color: var(--bg-elements);
+  color: var(--bg-main);
+  box-shadow: var(--box-shadow-1);
+  cursor: pointer;
+  padding: 1rem 6rem;
+}
+.editButton:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-secondary);
+  color: var(--text-start-inverted);
+}

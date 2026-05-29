@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../api/axios";
 import styles from "./Exercise.module.css";
-import { ExerciseForm } from "../../components/ExerciseForm/ExerciseForm";
+import { EyeIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
+import { Link } from "react-router-dom";
 
-interface ExerciseData {
-  id?: number;
+export interface ExerciseData {
+  id: number;
   title: string;
   goal: string;
   expertise: string;
@@ -15,8 +16,6 @@ interface ExerciseData {
 
 export const Exercise = () => {
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
-  const [editExercise, setEditExercise] = useState<ExerciseData | null>(null);
-  const showDialog = useRef(null);
   useEffect(() => {
     const getAllExercises = async () => {
       try {
@@ -24,31 +23,17 @@ export const Exercise = () => {
         console.log("Juhuu, das hat geklappt:", response.data);
         setExercises(response.data);
       } catch (error) {
-        console.error(error);
-        alert("Da ist etwas schief gelaufen.");
+        console.error("Failed to load exercises", error);
       }
     };
     getAllExercises();
   }, []);
-
-  useEffect(() => {
-    if (editExercise) {
-      showDialog.current.showModal();
-    } else {
-      showDialog.current.close();
-    }
-  }, [editExercise]);
 
   const handleDelete = async (id: number) => {
     const check = window.confirm("Möchtest du diese Übung wirklich löschen?");
     if (!check) return;
     try {
       const response = await api.delete(`/exercise/${id}`);
-      if (!response) {
-        alert("Oh, das hat nicht geklappt. Versuche es noch einmal.");
-        return;
-      }
-      alert("Juhuu das hat geklappt");
       const deleteId = response.data;
 
       setExercises((prev) =>
@@ -60,66 +45,44 @@ export const Exercise = () => {
     }
   };
 
-  const handleUpdate = async (exercise: ExerciseData) => {
-    console.log("Okay, here we go!");
-    console.log(exercise);
-    try {
-      const response = await api.put(`/exercise/${editExercise?.id}`, exercise);
-      console.log("Erfolg:", response.data);
-      alert("Juhuu das hat geklappt");
-      setEditExercise(null);
-      const updatedEx = response.data;
-      setExercises((prev) =>
-        prev.map((exercise) => {
-          if (exercise.id === updatedEx.id) {
-            return updatedEx;
-          } else {
-            return exercise;
-          }
-        }),
-      );
-    } catch (error) {
-      console.error(error);
-      alert("Da ist etwas schief gelaufen beim Speichern der Übung");
-    }
-  };
-
   return (
-    <main>
-      <ul className={styles.list}>
-        {exercises?.map((exercise, index) => (
-          <li
-            key={exercise.id}
-            className={`${index % 2 === 0 ? styles.oddCard : styles.evenCard}`}
-          >
-            <h3>{exercise.title}</h3>
-            <p className={styles.content}>{exercise.expertise}</p>
-            <div className={styles.buttonContainer}>
-              <button type="button" onClick={() => setEditExercise(exercise)}>
-                Bearbeiten
-              </button>
-              <button type="button" onClick={() => handleDelete(exercise?.id)}>
-                Löschen
+    <main className={styles.exContainer}>
+      <h2>Übungen</h2>
+      <ul className={styles.exList}>
+        {exercises?.map((exercise) => (
+          <li key={exercise.id} className={styles.exCard}>
+            <div className={styles.cardHeading}>
+              <h3>{exercise.title}</h3>
+            </div>
+            <div className={styles.contentContainer}>
+              <p className={styles.content}>{exercise.expertise}</p>
+            </div>
+            <div className={styles.itemContainer}>
+              <Link
+                to={`/exercise/${exercise.id}`}
+                type="button"
+                className={styles.link}
+              >
+                <EyeIcon size={28} />
+              </Link>
+              <Link
+                to={`/exercise/${exercise.id}`}
+                state={{ startInEditMode: true }}
+                className={styles.link}
+              >
+                <PencilSimpleIcon size={28} />
+              </Link>
+              <button
+                type="button"
+                className={styles.button}
+                onClick={() => handleDelete(exercise.id)}
+              >
+                <TrashIcon size={28} />
               </button>
             </div>
           </li>
         ))}
       </ul>
-
-      <dialog ref={showDialog} className={styles.editDialog}>
-        {editExercise && (
-          <>
-            <h2>Bearbeite eine Übung</h2>
-            <ExerciseForm
-              handleSubmit={handleUpdate}
-              editExercise={editExercise}
-            />
-            <button type="button" onClick={() => setEditExercise(null)}>
-              Abbrechen
-            </button>
-          </>
-        )}
-      </dialog>
     </main>
   );
 };

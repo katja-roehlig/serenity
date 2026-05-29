@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./ExerciseForm.module.css";
+import { ArrowUDownLeftIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 
 interface ExerciseFormProps {
   handleSubmit(exercise: {
@@ -19,11 +20,13 @@ interface ExerciseFormProps {
     instructions: string;
     media: string | null;
   };
+  onCancel(): void;
 }
 
 export const ExerciseForm = ({
   handleSubmit,
   editExercise,
+  onCancel,
 }: ExerciseFormProps) => {
   const [title, setTitle] = useState(editExercise?.title ?? "");
   const [goal, setGoal] = useState(editExercise?.goal ?? "");
@@ -54,7 +57,9 @@ export const ExerciseForm = ({
   return (
     <form onSubmit={handleExercise}>
       <div className={styles.inputWrapper}>
-        <label htmlFor="title">Titel </label>
+        <label htmlFor="title" className={styles.label}>
+          <h3>Titel </h3>
+        </label>
         <input
           className={styles.input}
           type="text"
@@ -65,7 +70,9 @@ export const ExerciseForm = ({
         />
       </div>
       <div className={styles.inputWrapper}>
-        <label htmlFor="goal">Ziel der Übung: </label>
+        <label htmlFor="goal" className={styles.label}>
+          <h3>Ziel der Übung:</h3>
+        </label>
         <textarea
           className={styles.text}
           name="goal"
@@ -75,7 +82,9 @@ export const ExerciseForm = ({
         />
       </div>
       <div className={styles.inputWrapper}>
-        <label htmlFor="expertise">Fachwissen: </label>
+        <label htmlFor="expertise" className={styles.label}>
+          <h3>Fachwissen:</h3>{" "}
+        </label>
         <textarea
           className={styles.text}
           name="expertise"
@@ -85,7 +94,9 @@ export const ExerciseForm = ({
         />
       </div>
       <div className={styles.inputWrapper}>
-        <label htmlFor="emotions">Emotionaler Zustand: </label>
+        <label htmlFor="emotions" className={styles.label}>
+          <h3>Emotionaler Zustand: </h3>{" "}
+        </label>
         <textarea
           className={styles.text}
           name="emotions"
@@ -96,7 +107,9 @@ export const ExerciseForm = ({
       </div>
 
       <div className={styles.inputWrapper}>
-        <label htmlFor="instructions">Anleitung: </label>
+        <label htmlFor="instructions" className={styles.label}>
+          <h3>Anleitung</h3>{" "}
+        </label>
         <textarea
           className={styles.text}
           name="instructions"
@@ -107,7 +120,9 @@ export const ExerciseForm = ({
       </div>
 
       <div className={styles.inputWrapper}>
-        <label htmlFor="media">Media Link (optional) </label>
+        <label htmlFor="media" className={styles.label}>
+          <h3>Media Link (optional)</h3>
+        </label>
         <input
           className={styles.input}
           type="text"
@@ -117,7 +132,16 @@ export const ExerciseForm = ({
           onChange={(event) => setMedia(event.target.value)}
         />
       </div>
-      <button type="submit">Übung speichern</button>
+      <div className={styles.buttonContainer}>
+        <button className={styles.exButton} type="button" onClick={onCancel}>
+          <ArrowUDownLeftIcon size={28} />
+          Abbrechen
+        </button>
+        <button className={styles.exButton} type="submit">
+          <UploadSimpleIcon size={28} />
+          Speichern
+        </button>
+      </div>
     </form>
   );
 };

@@ -1,56 +1,101 @@
-.list {
-  list-style: none;
-  padding-left: 0;
+.exContainer {
+  /* max-width: 900px; */
+  background-color: var(--bg-main);
+  padding: 3rem;
+  padding-left: var(--space-xl);
+}
+.exList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3.2rem;
+}
+.exCard {
+  width: 340px;
+  background-color: var(--bg-surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--box-shadow-1);
+}
+.cardHeading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 92px;
+  transition: background-image 0.3s ease;
+  background-image: linear-gradient(
+    -90deg,
+    var(--bg-surface-2),
+    var(--bg-surface-3) 75%
+  );
+  padding: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  cursor: pointer;
 }
 
-.list li {
-  padding: 20px;
-  border-radius: 20px;
-
-  box-shadow: -2px 2px 6px #d6d6d6;
-  margin-bottom: 30px;
+.exList h3 {
+  color: var(--text-dark);
+  margin: 0;
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 1.6rem;
+  text-align: center;
 }
-.list h3 {
-  color: rgb(82, 67, 193);
-}
-.oddCard {
-  background-color: rgb(237, 240, 251);
-}
-.evenCard {
-  background-color: rgb(253, 245, 235);
+.button {
+  padding: 0;
 }
 .content {
   overflow: hidden;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  width: 100%;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  min-height: fit-content;
+  font-size: 1.6rem;
+  padding: 0;
+  line-height: 1.5;
+}
+.contentContainer {
+  padding-inline: var(--space-md);
+  padding-block: 1rem;
+}
+.itemContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-md);
 }
 
-.buttonContainer {
+.link,
+.button {
+  background-color: var(--bg-surface-3);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
   display: flex;
-  justify-content: flex-end;
-  gap: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid transparent;
 }
-.buttonContainer button {
-  padding: 10px 30px;
-  border: none;
-  border-radius: 20px;
-  background-color: rgb(82, 67, 193);
-  color: rgb(255, 253, 253);
-  box-shadow: -2px 2px 6px #d6d6d6;
-  cursor: pointer;
+
+.link:hover,
+.button:hover {
+  background-color: var(--bg-surface-1);
+  border: 3px solid var(--border-color-2);
 }
-.editDialog {
-  width: 60%;
-  margin: auto;
-  height: 90vh;
-  border: none;
-  padding: 30px 50px;
-  border-radius: 8px;
-  overflow-y: auto;
+.link:active,
+.button:active {
+  background-color: var(--bg-secondary);
+  border-color: transparent;
 }
-.editDialog::backdrop {
-  background-color: #010623c6;
+.link:focus-visible,
+.button:focus-visible {
+  background-color: var(--bg-surface-1);
+  border: 3px solid var(--border-color-3);
+}
+.exCard:hover .cardHeading {
+  background-image: linear-gradient(
+    -90deg,
+    var(--bg-surface-2),
+    var(--bg-secondary) 75%
+  );
 }
