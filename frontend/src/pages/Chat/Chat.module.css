@@ -1,38 +1,42 @@
 .chatContainer {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   background-color: var(--bg-main);
-  height: calc(100vh - 63px);
-  overflow-y: auto;
+  height: 100%;
+  overflow: hidden;
 }
 
 .messageList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  padding-inline: 8rem 2rem;
-  padding-block: var(--space-lg) 15rem;
+  padding-inline: var(--space-xl);
+  padding-block: var(--space-lg) 9rem;
+  width: 900px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 .layoutWrapper {
   flex: 1;
   display: flex;
   width: 100%;
   flex-direction: column;
-  justify-content: space-between;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
-.spacer {
-  width: 15vw;
-  height: 200px;
-}
+
 .messageList li {
   width: 100%;
 }
 
 .chatBubble {
-  padding: 20px;
-  border-top-left-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border-top-right-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+  width: 600px;
   max-width: 600px;
-  width: fit-content;
+  /* width: fit-content; */
   margin-bottom: 30px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -40,14 +44,14 @@
 
 .userChat {
   background-color: var(--bg-surface-4);
-  margin-left: auto;
   border-bottom-right-radius: var(--radius-lg);
+  margin-left: auto;
   box-shadow: 2px 2px 8px #00000010;
 }
 
 .kiChat {
   background-color: var(--bg-surface-3);
-  border-bottom-left-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-lg);
   box-shadow: -2px 2px 8px #00000010;
 }
 
@@ -56,51 +60,60 @@
 }
 .input {
   flex: 1;
-  width: 700px;
   min-width: fit-content;
+  width: 100%;
   line-height: 1.5;
   font-size: 1.6rem;
   font-family: var(--font-text);
-  /* height: fit-content; */
-  padding: var(--space-md);
-  border-radius: var(--space-md);
+  field-sizing: content;
+  padding: var(--space-lg);
+  padding-right: var(--space-xl);
+  border-radius: var(--radius-xl);
   border-color: var(--border-color-1);
   background-color: var(--white);
-  border: none;
+  border: 2px solid transparent;
   box-shadow:
     inset 2px 2px 2px #00000015,
     inset -2px -2px 2px #00000015;
 }
 
+.input:hover::placeholder {
+  color: var(--text-primary);
+}
+.input:focus {
+  border-color: var(--text-start);
+  box-shadow: none;
+}
+
 .formContainer {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: start;
-  align-self: center;
-  position: fixed;
-  left: calc(20vw);
-  /* right: 15vw; */
-  bottom: 0;
-  right: 0;
-  width: auto;
-  padding-block: 1.5rem;
-
-  background-color: white;
+  align-items: center;
+  width: 100%;
+  padding-bottom: var(--space-xl);
+  background-image: linear-gradient(transparent 30%, white 30%);
+  margin-top: -6rem;
 }
 .writingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-left: 8rem;
+  width: 900px;
+  max-width: 900px;
+  padding-inline: var(--space-xl);
 }
 .submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: var(--bg-elements);
   padding-block: var(--space-sm);
   color: var(--bg-main);
   box-shadow: -2px 2px 6px #d6d6d6;
+  border-radius: var(--space-xl);
   align-self: end;
-  padding: 1rem 6rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
 }
 .button:hover {
   transform: scale(1.1);
@@ -117,10 +130,10 @@
   color: var(--text-muted);
   font-size: 12px;
   position: absolute;
-  bottom: -15px;
-  left: 10px;
+  border: 1px solid depppink;
+  bottom: -16px;
+  left: 25px;
 }
-/* In deiner Chat.module.css */
 
 /* Schaltet die Listenpunkte wieder ein, falls sie global deaktiviert waren */
 .markdownContent ul {

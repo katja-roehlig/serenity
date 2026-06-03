@@ -19,7 +19,7 @@
   --grey-700: #495057;
   --grey-900: #212529;
   --orange-100: #fdf3e6;
-  --orange-200: #fce5d1;
+  --orange-200: #fcede0;
   --orange-300: #f8cfab;
   /* --blue-100: #d7e9fa; */
   --blue-100: #d7e7fa;
@@ -28,9 +28,10 @@
   --blue-700: #4e83af;
 
   --blue-600: #2278b9;
-  --blue-600-alpha: rgba(34, 123, 185, 0.43);
+  --blue-600-alpha: #227bb96e;
   --blue-800: 0, 27, 54; /*rgb */
   --blue-900: #01040d;
+  --blue-800-hex: #001b36;
 
   --space-xs: 0.4rem; /* 4px */
   --space-sm: 1rem; /* 8px */
@@ -40,9 +41,10 @@
   --space-xl: 4rem;
   --space-xxl: 8rem; /* 40px */
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 0.6rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.6rem;
+  --radius-xl: 4rem;
 
   --primary-color: #5243c1;
   --secondary-color: #ffedd6;
@@ -64,7 +66,7 @@
   --bg-surface-1: var(--white);
   --bg-surface-2: var(--grey-200);
   --bg-surface-3: var(--blue-100);
-  --bg-surface-4: var(--orange-100);
+  --bg-surface-4: var(--orange-200);
   --bg-chat-ai: var(--blue-100);
   --bg-button-primary: var(--blue-400);
   --bg-secondary: var(--orange-300);
@@ -96,6 +98,11 @@ input {
   font-size: 1.6rem;
   padding: var(--space-sm);
   color: #01040d;
+  cursor: pointer;
+}
+textarea {
+  outline: none;
+  cursor: pointer;
 }
 
 #root {

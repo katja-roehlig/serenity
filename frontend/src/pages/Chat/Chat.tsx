@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/axios";
 import styles from "./Chat.module.css";
-import { CheckFatIcon } from "@phosphor-icons/react";
+import { ArrowFatUpIcon } from "@phosphor-icons/react";
 import { useOutletContext } from "react-router-dom";
 import type { UserProfile } from "../../layouts/SerenityLayout";
 import toast from "react-hot-toast";
@@ -27,7 +27,28 @@ export const Chat = () => {
   const [content, setContent] = useState("");
   const [isWaiting, setIsWaiting] = useState(false);
   const cursorRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const handleResetChat = () => {
+      setMessages([
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: `Hey **${userName}**!  \n\nWas kann ich heute für dich tun?`,
+        },
+      ]);
+    };
+    window.addEventListener("resetChat", handleResetChat);
+    // eine Funktion nach return im useEffect() wird erst beim Verlassen der Seite ausgeführt
+    return () => {
+      window.removeEventListener("reset", handleResetChat);
+    };
+  }, [userName]);
   const handleChat = (event: React.SubmitEvent) => {
     setIsWaiting(true);
     event.preventDefault();
@@ -96,35 +117,41 @@ export const Chat = () => {
               </div>
             </li>
           ))}
+          {<div ref={messagesEndRef} />}
         </ul>
-        <form onSubmit={handleChat} className={styles.formContainer}>
-          <label htmlFor="content" className={styles.label}>
-            User Message
-          </label>
-          <div className={styles.writingContainer}>
-            <div className={styles.warning}>
-              <textarea
-                className={styles.input}
-                name="content"
-                id="content"
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                placeholder="Schreib etwas ..."
-                autoFocus
-              ></textarea>
-            </div>
-
+      </div>
+      <form onSubmit={handleChat} className={styles.formContainer}>
+        <label htmlFor="content" className={styles.label}>
+          User Message
+        </label>
+        <div className={styles.writingContainer}>
+          <div className={styles.warning}>
+            <textarea
+              className={styles.input}
+              name="content"
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={(e) => {
+                // Wenn Enter gedrückt wird OHNE die Shift-Taste, wird abgeschickt
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              placeholder="Schreib etwas ..."
+              autoFocus
+            ></textarea>
             <button
               type="submit"
               disabled={isWaiting ? true : false}
               className={styles.submitButton}
             >
-              <CheckFatIcon weight="fill" size={24} />
+              <ArrowFatUpIcon size={24} />
             </button>
           </div>
-        </form>
-      </div>
-      <div className={styles.spacer}></div>
+        </div>
+      </form>
     </main>
   );
 };

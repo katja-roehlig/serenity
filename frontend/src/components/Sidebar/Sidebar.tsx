@@ -21,6 +21,12 @@ export const Sidebar = ({ userData }: { userData: UserProfile }) => {
   const firstLetter = userName.charAt(0);
   const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
   const [isExerciseMenuOpen, setIsExerciseMenuOpen] = useState(false);
+
+  const deleteChatHistory = () => {
+    localStorage.removeItem(`Chat ${userData.id}`);
+    const resetChat = new Event("resetChat");
+    window.dispatchEvent(resetChat);
+  };
   return (
     <aside className={styles.sidebar}>
       <div className={styles.name}>
@@ -72,7 +78,10 @@ export const Sidebar = ({ userData }: { userData: UserProfile }) => {
             </NavLink>
             {isChatMenuOpen && (
               <div className={styles.submenu}>
-                <button className={styles.submenuButton}>
+                <button
+                  className={styles.submenuButton}
+                  onClick={deleteChatHistory}
+                >
                   <TrashIcon size={24} />
                   Zurücksetzen
                 </button>
