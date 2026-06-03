@@ -3,6 +3,9 @@ from app.models.models import Exercise
 from sqlalchemy.exc import SQLAlchemyError
 from app.services.vector_service import VECTOR_SERVICE
 from exceptions import VectorError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ExerciseService:
@@ -11,16 +14,22 @@ class ExerciseService:
             exercise = await db.get(Exercise, exercise_id)
             return exercise
         except SQLAlchemyError as e:
-            print(f"Database error: {e}")
+            logger.error(
+                f"Database error while trying to get an exercise by id: {e}",
+                exc_info=True,
+            )
             return None
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(
+                f"Unexpected error while trying to get an exercise by id: {e}",
+                exc_info=True,
+            )
             return None
 
     async def add_exercise(self, db, exercise):
         db.add(exercise)
         try:
-            await db.commit()  # new_exercise wird in die db geschrieben
+            await db.commit()
             await db.refresh(
                 exercise
             )  # new exercise wird aktualisiert, mit id versehen und dann returnt
@@ -30,11 +39,11 @@ class ExerciseService:
         try:
             await VECTOR_SERVICE.put_exercise(
                 exercise.goal, exercise.expertise, exercise.emotions, exercise.id
-            )  # der Vektor_service wird aufgerufen, um direkt die Übung in ChromaDB zu überführen.
-            print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
+            )
+            # print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
             return exercise
-        except VectorError:
-            print("Error adding to the vector database")
+        except VectorError as e:
+            logger.error(f"Error adding to the vector database: {e}", exc_info=True)
             await self.delete_exercise(db, exercise.id)
             raise
 
@@ -54,9 +63,10 @@ class ExerciseService:
 
         try:
             await VECTOR_SERVICE.delete_exercise(id)
-            print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
-        except VectorError:
-            print("Error deleting from the vector database")
+        except VectorError as e:
+            logger.error(
+                f"Error deleting exercise from the vector database: {e}", exc_info=True
+            )
             raise
 
         try:
@@ -65,7 +75,7 @@ class ExerciseService:
             return id
         except SQLAlchemyError as e:
             await db.rollback()
-            print("Error deleting in SQL")
+            logger.error(f"Error deleting an exercise in SQL{e}", exc_info=True)
             raise e
 
     async def update_exercise(self, db, id, update_exercise):
@@ -79,9 +89,8 @@ class ExerciseService:
                 update_exercise.emotions,
                 id,
             )
-            print("Anzahl der Einträge: ", VECTOR_SERVICE.get_count())
-        except VectorError:
-            print("Error updating the vector database")
+        except VectorError as e:
+            logger.error(f"Error updating the vector database: {e}", exc_info=True)
             raise
         exercise_to_update.title = update_exercise.title
         exercise_to_update.goal = update_exercise.goal

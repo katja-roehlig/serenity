@@ -61,7 +61,7 @@ class VectorService:
         text, score = result[0]
         print(f"VEKTORSUCHE - ÜBUNG: {text.metadata.get('id')}: Score: {score}")
         if score > 0.8:
-            print(f"Score zu hoch: {score}")
+            logger.info(f"Score too high for a suitable exercise : {score}")
             return None
         exercise_id = text.metadata.get("id")
         return exercise_id
@@ -99,9 +99,11 @@ class VectorService:
 
     async def search_memory(self, metadata: dict, embedding: list[float], status: str):
         search_filter = {
-            "user_id": metadata["user_id"],
-            "category": metadata["category"],
-            "status": status,
+            "$and": [
+                {"user_id": {"$eq": str(metadata["user_id"])}},
+                {"category": {"$eq": str(metadata["category"])}},
+                {"status": {"$eq": str(status)}},
+            ]
         }
         try:
             result = await run_in_executor(
@@ -109,7 +111,7 @@ class VectorService:
                 self.memory_store.similarity_search_by_vector_with_relevance_scores,
                 embedding=embedding,
                 k=1,
-                filter=search_filter,
+                filter=search_filter,  # type: ignore
             )
             return result
         except Exception as e:
