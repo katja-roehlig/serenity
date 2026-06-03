@@ -3,13 +3,12 @@ import operator
 from typing import Annotated, Any, NotRequired, Optional, Sequence, TypedDict, cast
 from dotenv import load_dotenv
 import os
+import logging
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-
-# from pydantic import BaseModel, Field
 from app.schemas.ai_schemas import StateAnalysis
 from app.services.exercise_service import EXERCISE_SERVICE
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,8 +39,9 @@ tools = [tavily]
 # Das Logik-Modell braucht Zugriff auf die Tools
 logic_model_with_tools = logic_model.bind_tools(tools)
 
+logger = logging.getLogger(__name__)
 
-# state wird erfasst
+
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     user_id: str
@@ -144,7 +144,7 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
         return {}
     exercise = await EXERCISE_SERVICE.get_exercise_by_id(db, exercise_id)
     if not exercise:
-        print(f"No exercise with id {exercise_id} in database")
+        logger.warning(f"No exercise with id {exercise_id} in database")
         return {}
     return {
         "exercise_goal": exercise.goal,
@@ -189,27 +189,32 @@ async def chat_therapist(state: AgentState):
     memories = state.get("memory_results", [])
 
     system_prompt = f"""
-       
-        Du bist Serenity, ein erfahrener und einfühlsamer Therapeut.
-        Antworte extrem kurz und knackig. Verwende maximal 50-60 Wörter.
-        {user_context}
-    
-        DEINE MISSION:
-            1. Sei empathisch. Wenn der User leidet, validiere zuerst seine Gefühle (z.B. 'Das ist echt verdammt hart, dass du den Job verloren hast').
-            2. Nutze die Stärken NIEMALS als Floskel. 
-            3. Biete den Wohlfühlort des Users als OPTION an, wenn der User nach Bewältigungsstrategien sucht oder völlig blockiert ist. 
-            4. Wenn der User einen Vorschlag ablehnt, akzeptiere das sofort und bohre nicht nach.
-        DEIN ZIEL:
-        Sobald eine Übung abgeschlossen ist ODER es dem User besser geht, ermutige ihn, wieder in den Alltag zu gehen.
-        NOTFALL:
-        Wenn der User Absichten äußert, sich selbst oder anderen Schaden zuzufügen, antworte empathisch. 
-        Sage ihm, dass du nur eine KI bist und er jetzt menschliche Hilfe braucht. 
-        Verweise ihn IMMER auf die Notrufnummer der Polizei: 112 und die Telefonseelsorge: 0800 111 0 111.
-     """
+    Du bist Serenity, der „Archetypische Metaphern-Coach“ – eine einfühlsame, präsente und radikal loyale Begleiterin für Persönlichkeitsentwicklung. 
+    Dein Grundstil ist kraftvoll, strukturiert und empathisch.
+    WICHTIGSTE PRIORITÄT (USER-KONTEXT & MERKMALE):
+    Hier sind die fixen Daten des Users (inklusive Geschlecht für Grammatik und Spitznamen):
+    {user_context}"""
     if memories:
-        system_prompt += "\nHier sind noch ein paar Inos zum User:"
+        system_prompt += "\n\nZUSÄTZLICHER KONTEXT & AKTUELLES THEMA:"
         for memory in memories:
-            system_prompt += f"\n{memory}"
+            system_prompt += f"\n- {memory}"
+    system_prompt += f"""
+        
+
+    DEIN DIALOG-VERHALTEN (SITUATIV & FLEXIBEL):
+    1. DER USER STEHT IM FOKUS: Reagiere immer individuell auf das, was der User im aktuellen Moment braucht. Deine absolute Hauptaufgabe ist es, zuzuhören, Gefühle messerscharf zu SPIEGELN und dem User das Gefühl zu geben, vollkommen verstanden und sicher zu sein.
+    2. METAPHERN ALS GEWÜRZ: Nutze lebendige Alltags-Metaphern (Haus, Akku, Kompass), wenn sie dem User helfen, sein Chaos besser zu verstehen. Wenn der User stark emotional oder verzweifelt ist, lass die Metaphern komplett weg und sei einfach nur menschlicher Halt.
+    3. PEPP & SPITZNAMEN: Bring eine motivierende, frische Energie in das Gespräch, sobald der User bereit dafür ist. Du darfst ihm ab und zu stärkende, zum Geschlecht passende Spitznamen geben (Frau: Königin, Hüterin / Mann: König, Hüter). Nutze sie aber niemals am Satzanfang und niemals inflationär, sondern nur als seltenes, kraftvolles Highlight. Nutze niemals "Kapitän".
+    4. KEINE ZWANGS-PLÄNE: Plane nichts voraus und erstelle keine To-Do-Listen. 
+    STIL & FORMAT:
+    - Antworte extrem kurz und knackig (maximal 50-60 Wörter).
+    - Nutze Markdown (Fettdruck für emotionale Anker, Absätze für Struktur).
+    
+     """
+    # if memories:
+    #     system_prompt += "\nHier sind noch ein paar Inos zum User:"
+    #     for memory in memories:
+    #         system_prompt += f"\n{memory}"
 
     if state.get("is_in_exercise"):
         instructions = state.get("exercise_instructions")
@@ -218,7 +223,8 @@ async def chat_therapist(state: AgentState):
             AKTUELL: Deine Übung hat das Ziel '{state.get('exercise_goal')}'.
             HINTERGRUND: {state.get('exercise_expertise')}
             DEINE ANLEITUNG: {state.get('exercise_instructions')}
-            AUFGABE: Begleite den User Schritt für Schritt durch diese Übung. Passe die Übung auf seine Situation an, auch wenn sie dann länger dauert. 
+            AUFGABE: Begleite den User Schritt für Schritt durch diese Übung. Passe die Übung auf seine Situation an, 
+            auch wenn sie dann länger dauert. 
             Wenn die Übung beendet ist, frage: 'Wie geht es dir jetzt? Hat dir diese Übung geholfen'
             ENDE DER KOMPLETTEN ÜBUNG: Setze das Signal [FINISHED] ans Ende deiner Antwort."""
         else:
