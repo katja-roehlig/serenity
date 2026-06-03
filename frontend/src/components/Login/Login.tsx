@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import styles from "./Login.module.css";
 import toast from "react-hot-toast";
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 
 export const Login = () => {
   const [mail, setMail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
@@ -46,6 +48,7 @@ export const Login = () => {
           </label>
           <input
             className={styles.input}
+            autoComplete="one-time-code"
             type="email"
             name="mail"
             id="mail"
@@ -57,14 +60,27 @@ export const Login = () => {
           <label htmlFor="password" className={styles.label}>
             Dein Passwort:{" "}
           </label>
-          <input
-            className={styles.input}
-            type="password"
-            name="password"
-            id="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <div className={styles.passwordContainer}>
+            <input
+              className={styles.input}
+              type={`${showPassword ? "text" : "password"}`}
+              name="password"
+              id="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <button
+              type="button"
+              className={styles.passwordButton}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeSlashIcon size={24} />
+              ) : (
+                <EyeIcon size={24} />
+              )}
+            </button>
+          </div>
         </div>
         <button type="submit" className={styles.button}>
           Los geht´s

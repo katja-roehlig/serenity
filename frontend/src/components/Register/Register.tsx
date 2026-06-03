@@ -2,12 +2,13 @@ import { api } from "../../api/axios";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Register.module.css";
-import { SignInIcon } from "@phosphor-icons/react";
+import { EyeIcon, EyeSlashIcon, SignInIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 
 export const Register = () => {
   const [name, setName] = useState("");
   const [mail, setMail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const handleSubmit = async (event: React.SubmitEvent) => {
@@ -35,6 +36,7 @@ export const Register = () => {
           </label>
           <input
             className={styles.input}
+            autoComplete="one-time-code"
             type="text"
             name="name"
             id="name"
@@ -48,6 +50,7 @@ export const Register = () => {
           </label>
           <input
             className={styles.input}
+            autoComplete="one-time-code"
             type="email"
             name="mail"
             id="mail"
@@ -59,14 +62,27 @@ export const Register = () => {
           <label htmlFor="password" className={styles.label}>
             Dein Passwort:{" "}
           </label>
-          <input
-            className={styles.input}
-            type="password"
-            name="password"
-            id="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <div className={styles.passwordContainer}>
+            <input
+              className={styles.input}
+              type={`${showPassword ? "text" : "password"}`}
+              name="password"
+              id="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <button
+              type="button"
+              className={styles.passwordButton}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeSlashIcon size={24} />
+              ) : (
+                <EyeIcon size={24} />
+              )}
+            </button>
+          </div>
         </div>
         <button type="submit" className={styles.button}>
           Registrieren
