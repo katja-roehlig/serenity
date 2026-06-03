@@ -26,7 +26,6 @@ from app.schemas.api_schemas import (
     UserBasic,
     UserCreate,
     UserOnboarding,
-    UserProfile,
     UserRead,
 )
 from langchain_core.messages import HumanMessage
@@ -112,7 +111,7 @@ async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(g
         new_exercise = await EXERCISE_SERVICE.add_exercise(db, new_exercise)
         return new_exercise
     except (SQLAlchemyError, VectorError) as e:
-        print("ERROR: ", e)
+        logger.error("Error while adding an exercise:", e)
         raise HTTPException(
             status_code=500, detail=f"Database error during saving, {e}"
         )
@@ -180,7 +179,7 @@ async def register_user(user_reg: UserCreate, db: AsyncSession = Depends(get_db)
         await USER_SERVICE.register_user(db, new_user)
         return new_user
     except SQLAlchemyError as e:
-        print(e)
+        logger.error(f"Failed to register a new user: {e}")
         return {"error": e}, 500
 
 
@@ -234,7 +233,6 @@ async def handle_chat(
     current_user_message = HumanMessage(content=new_message.content)
 
     user_data = await get_user_resources(db, current_user)
-    print(f"USER-DATA: {user_data}")
 
     config: RunnableConfig = {
         "configurable": {"thread_id": str(current_user.id)},
@@ -247,13 +245,14 @@ async def handle_chat(
         },
     }
     serenity_core_agent = create_serenity_core_agent(db)
-    message_limit = 16
+    message_limit = 6
     # hier wird der Archivist_Agent aktiviert!
     chat_state = serenity_core_agent.get_state(config)
     old_messages = chat_state.values.get("messages", [])
     total_messages = list(old_messages) + [current_user_message]
     if len(total_messages) >= message_limit:
-        if await activate_archivist_agent(db, current_user, total_messages):
+        if await activate_archivist_agent(db, current_user, total_messages, config):
+            print("--- ARCHIVIST HAS FINISHED ---")
             await trim_chat_history(serenity_core_agent, config, old_messages)
 
     # dem agenten die bisherigen nachrichten mitgeben
@@ -271,16 +270,6 @@ async def handle_chat(
         checkpointer_messages = chat_state.values.get("messages", [])
         logger.info(f"--- CHECKPOINTER DIAGNOSIS FOR USER {current_user.id} ---")
         logger.info(f"Total messages in Checkpointer RAM: {len(checkpointer_messages)}")
-
-        # Wir loggen die letzten zwei Nachrichten, um zu sehen ob User & KI drin sind
-        # if len(checkpointer_messages) >= 2:
-        #     logger.info(
-        #         f"Last User Message in RAM: {checkpointer_messages[-2].content}"
-        #     )
-        #     logger.info(
-        #         f"Last Serenity Message in RAM: {checkpointer_messages[-1].content}"
-        #     )
-        # logger.info("-------------------------------------------------------")
 
     except Exception as e:
         logger.error(f"Failed to read from checkpointer during diagnosis: {e}")

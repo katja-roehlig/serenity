@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 async def activate_archivist_agent(
-    db: AsyncSession, current_user: User, total_messages: list
+    db: AsyncSession, current_user: User, total_messages: list, config: RunnableConfig
 ):
     logger.info(f"--- ARCHIVIST TRIGGERED --- Message count: {len(total_messages)}")
     try:

@@ -211,10 +211,6 @@ async def chat_therapist(state: AgentState):
     - Nutze Markdown (Fettdruck für emotionale Anker, Absätze für Struktur).
     
      """
-    # if memories:
-    #     system_prompt += "\nHier sind noch ein paar Inos zum User:"
-    #     for memory in memories:
-    #         system_prompt += f"\n{memory}"
 
     if state.get("is_in_exercise"):
         instructions = state.get("exercise_instructions")
