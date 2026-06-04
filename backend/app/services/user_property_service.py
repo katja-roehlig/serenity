@@ -65,7 +65,7 @@ class UserPropertyService:
                 f"Database connection error for user {user_id}: {e}",
                 exc_info=True,
             )
-            raise e
+            raise
 
     async def get_all_user_data(self, db, user_id):
         query = select(UserProperty).where(UserProperty.user_id == user_id)
@@ -77,15 +77,15 @@ class UserPropertyService:
                 f"Database connection error for user {user_id}: {e}",
                 exc_info=True,
             )
-            raise e
+            raise
 
     async def add_data(self, db, user_property: UserProfile):
         db.add(user_property)
         try:
             await db.commit()
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             await db.rollback()
-            raise e
+            raise
 
     async def update_data(self, db, content, metadata):
         data_to_update = await db.get(UserProperty, metadata.get("id"))
@@ -138,7 +138,7 @@ class UserPropertyService:
                 exc_info=True,
             )
             if raise_on_error:  # in der dashboard route muss user informiert werden
-                raise e
+                raise
             return False  # wenn der archivist_agent arbeitet, soll keine info zum user gehen!
 
     async def find_data_by_user_and_id(self, user_id, data_id, db):

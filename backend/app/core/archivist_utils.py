@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from importlib import metadata
+import re
 from tkinter import S
 from langchain_core.documents import Document
 from app.services.vector_service import VECTOR_SERVICE
@@ -15,33 +16,53 @@ logger = logging.getLogger(__name__)
 async def handle_life_data(
     content: str,
     metadata: dict,
+    user_name: str,
     db: AsyncSession,
 ):
     metadata["status"] = "active"
-    if metadata["category"] == "current_situation":
-        metadata["expires_at"] = (
-            datetime.now(timezone.utc) + timedelta(weeks=3)
-        ).strftime("%Y-%m-%d")
     embedding = await VECTOR_SERVICE.create_embedding(content)
     result = await VECTOR_SERVICE.search_memory(metadata, embedding, status="active")
+    # für alle Kategorien gucken, ob es die Info schon gibt
     if result:
         doc, score = result[0]
         if score <= 0.2:
-            if metadata["category"] == "current_situation":
-                metadata["id"] = doc.metadata.get("id")
-                await save_to_db(content, metadata, db)
-            return
+            # Wenn ja und ktegorien safe_place und memory, nix tun
+            if metadata["category"] == "memory" or metadata["category"] == "safe_place":
+                return
+        # wenn Kategorie current_situation content überschreiben in Vektor und SQL, in SQL Ablaufdatum verlängern!
+        old_content = doc.page_content
+        success = await VECTOR_SERVICE.update_memory(content, embedding, metadata)
+        if success:
+            try:
+                metadata["expires_at"] = (
+                    datetime.now(timezone.utc) + timedelta(weeks=3)
+                ).strftime("%Y-%m-%d")
+                await USER_PROPERTY_SERVICE.update_data(db, content, metadata)
+                return
+            except Exception as e:
+                # alten content wieder herstellen!
+                logger.error(f"SQLite Error within updating current_situation: {e}")
+                original_embedding = await VECTOR_SERVICE.create_embedding(old_content)
+                await VECTOR_SERVICE.update_memory(
+                    old_content, original_embedding, metadata
+                )
+                raise
     if VECTOR_SERVICE.add_memory(content, embedding, metadata):
         try:
-            await save_to_db(content, metadata, db)
+            if metadata["category"] == "current_situation":
+                metadata["expires_at"] = (
+                    datetime.now(timezone.utc) + timedelta(weeks=3)
+                ).strftime("%Y-%m-%d")
+            await save_to_db(content, metadata, user_name, db)
         except Exception as e:
             logger.error(f"SQLite Error with 'memory' or 'safe_place'  {e}")
             await VECTOR_SERVICE.delete_memory(str(metadata["id"]))
+            raise
 
 
 # info.category in ["belief", "pattern", "strengths", "goal"]:
 async def handle_supposed_data(
-    content: str, reasoning: str, metadata: dict, db: AsyncSession
+    content: str, reasoning: str, metadata: dict, user_name: str, db: AsyncSession
 ):
     expiration_date = (datetime.now(timezone.utc) + timedelta(weeks=22)).strftime(
         "%Y-%m-%d"
@@ -55,7 +76,7 @@ async def handle_supposed_data(
         if score <= 0.2:
             return
     await handle_hidden_search(
-        content, reasoning, metadata, embedding, expiration_date, db
+        content, reasoning, metadata, user_name, embedding, expiration_date, db
     )
 
 
@@ -63,6 +84,7 @@ async def handle_hidden_search(
     content: str,
     reasoning: str,
     metadata: dict,
+    user_name: str,
     embedding: list[float],
     expiration_date: str,
     db: AsyncSession,
@@ -77,7 +99,7 @@ async def handle_hidden_search(
             updated_metadata = update_metadata(doc, reasoning)
             existing_content = doc.page_content
             success = await VECTOR_SERVICE.update_memory(
-                existing_content, embedding, updated_metadata
+                content, embedding, updated_metadata
             )
             if success:
                 try:
@@ -86,21 +108,25 @@ async def handle_hidden_search(
                     )
                     return
                 except Exception as e:
-                    logger.error(f"SQLite Error within updating memory items: {e}")
+                    logger.error(
+                        f"SQLite Error within updating hidden memory items: {e}"
+                    )
                     original_embedding = await VECTOR_SERVICE.create_embedding(
                         existing_content
                     )
                     await VECTOR_SERVICE.update_memory(
                         existing_content, original_embedding, original_metadata
                     )
+                    raise
     new_metadata = create_new_metadata(metadata, reasoning)
-    VECTOR_SERVICE.add_memory(content, embedding, new_metadata)
-    metadata["expires_at"] = expiration_date
     try:
-        await save_to_db(content, metadata, db)
+        VECTOR_SERVICE.add_memory(content, embedding, new_metadata)
+        metadata["expires_at"] = expiration_date
+        await save_to_db(content, metadata, user_name, db)
     except Exception as e:
         logger.error(f"SQLite Error with hidden memory items: {e}")
         await VECTOR_SERVICE.delete_memory(str(metadata["id"]))
+        raise
 
 
 def create_new_metadata(metadata: dict, reasoning: str):
@@ -113,7 +139,7 @@ def create_new_metadata(metadata: dict, reasoning: str):
 def update_metadata(doc: Document, new_reasoning: str):
     updating_metadata = doc.metadata
     if updating_metadata["category"] in ["belief", "pattern"]:
-        limit = 10
+        limit = 3
     else:
         limit = 3
     counter = updating_metadata.get("counter", 0) + 1
@@ -128,12 +154,19 @@ def update_metadata(doc: Document, new_reasoning: str):
     return updating_metadata
 
 
-async def save_to_db(content: str, metadata: dict, db):
+async def save_to_db(content: str, metadata: dict, user_name: str, db):
+    final_content = content
+    if user_name.strip():
+        pattern = r"\b(der\s+|die\s+|den\s+|dem\s+|des\s+)?(user|nutzer)\b"
+        final_content = re.sub(pattern, user_name, final_content, flags=re.IGNORECASE)
+        logger.info(f"User name was successfully replaced: {user_name}")
+    else:
+        logger.warning("No Username available. Content stays in original version.")
     user_property = UserProperty(
         id=metadata["id"],
         user_id=metadata["user_id"],
         category=metadata["category"],
-        content=content,
+        content=final_content,
         created_at=metadata["created_at"],
         expires_at=metadata.get("expires_at"),
         reasoning=metadata.get("reasoning"),

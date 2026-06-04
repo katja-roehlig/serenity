@@ -29,6 +29,7 @@ from app.schemas.api_schemas import (
     UserRead,
 )
 from langchain_core.messages import HumanMessage
+from langgraph.types import Overwrite
 from langchain_core.runnables import RunnableConfig
 from app.ai.serenity_core_agent import AgentState, create_serenity_core_agent
 from app.services.user_service import USER_SERVICE
@@ -37,7 +38,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.services.vector_service import VECTOR_SERVICE
 from app.core.chat_route_utils import (
     activate_archivist_agent,
-    trim_chat_history,
     get_user_resources,
 )
 from app.ai.archivist_agent import ArchivistState, create_archivist_agent
@@ -233,11 +233,9 @@ async def handle_chat(
     current_user_message = HumanMessage(content=new_message.content)
 
     user_data = await get_user_resources(db, current_user)
-
     config: RunnableConfig = {
         "configurable": {"thread_id": str(current_user.id)},
         "callbacks": [langfuse_handler],
-        # "user_id": str(current_user.id),
         "metadata": {
             "langfuse_user_id": str(current_user.id),
             "user_name": current_user.nickname,
@@ -246,20 +244,33 @@ async def handle_chat(
     }
     serenity_core_agent = create_serenity_core_agent(db)
     message_limit = 6
+    overlap = 4
     # hier wird der Archivist_Agent aktiviert!
     chat_state = serenity_core_agent.get_state(config)
     old_messages = chat_state.values.get("messages", [])
     total_messages = list(old_messages) + [current_user_message]
+    serenity_input_messages = [current_user_message]
     if len(total_messages) >= message_limit:
-        if await activate_archivist_agent(db, current_user, total_messages, config):
+        try:
+            await activate_archivist_agent(db, current_user, total_messages)
             print("--- ARCHIVIST HAS FINISHED ---")
-            await trim_chat_history(serenity_core_agent, config, old_messages)
+            trimmed_message_list = total_messages[-overlap:]
+            await serenity_core_agent.aupdate_state(
+                config, {"messages": Overwrite(trimmed_message_list)}
+            )
+            print("--- SPEICHER WURDE ERFOLGREICH GEKÜRZT ---")
+            serenity_input_messages = []
 
+        except Exception as e:
+            logger.error(
+                f"Archivist Agent failed, messages  will not be trimmed", exc_info=True
+            )
     # dem agenten die bisherigen nachrichten mitgeben
     serenity_input: AgentState = {
-        "messages": [current_user_message],
+        "messages": serenity_input_messages,
         "user_id": str(current_user.id),
         "user_data": user_data,
+        # "message_trim": message_trim,
     }
     ai_response: AgentState = cast(
         AgentState, await serenity_core_agent.ainvoke(serenity_input, config)

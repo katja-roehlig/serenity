@@ -9,8 +9,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# config: RunnableConfig
 async def activate_archivist_agent(
-    db: AsyncSession, current_user: User, total_messages: list, config: RunnableConfig
+    db: AsyncSession,
+    current_user: User,
+    total_messages: list,
 ):
     logger.info(f"--- ARCHIVIST TRIGGERED --- Message count: {len(total_messages)}")
     try:
@@ -18,6 +21,7 @@ async def activate_archivist_agent(
         archivist_input: ArchivistState = {
             "messages": total_messages,
             "user_id": str(current_user.id),
+            "user_name": str(current_user.nickname),
             "found_items": [],
         }
         await archivist_agent.ainvoke(archivist_input)
@@ -25,21 +29,6 @@ async def activate_archivist_agent(
         return True
     except Exception as e:
         logger.error(f"Archivist error in background execution: {e}", exc_info=True)
-
-
-async def trim_chat_history(
-    serenity_core_agent, config: RunnableConfig, old_messages: list
-):
-    overlap = 3
-    remove_messages = [
-        RemoveMessage(id=message.id) for message in old_messages[:-overlap]
-    ]
-    state_update = {"messages": remove_messages}
-    try:
-        await serenity_core_agent.aupdate_state(config, state_update)
-        logger.info(f"Successfully trimmed deleted chat_history.")
-    except Exception as e:
-        logger.error(f"Failed to trim chat history: {e}", exc_info=True)
 
 
 async def get_user_resources(db, current_user):

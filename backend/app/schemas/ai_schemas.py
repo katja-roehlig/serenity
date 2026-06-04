@@ -32,14 +32,15 @@ CategoryType = Literal[
 
 
 class MemoryItem(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-
+    id: str | None = Field(
+        default=None, exclude=True
+    )  # mit exclude = True ignoriert die ki das Feld
     category: CategoryType = Field(
         description=(
-            "current_situation: Changeable life circumstances, acute events, or conflicts.\n"
-            "memory: Immutable, impactful biographical facts, that have shaped the user (e.g., childhood, past traumata).\n"
-            "belief: Deep, internal core beliefs and convictions about oneself or the world (The 'Why').\n"
-            "pattern: Recurring, observable behaviors or emotional reactions in specific situations (The 'How').\n"
+            "current_situation: Current status of job/education, relationships, family, pets,conflicts, health, mood and acute and upcoming life events."
+            "memory: Significant past events and biographical facts that shaped the user (e.g., childhood, trauma, past relationship milestones, holidays, partys, or major life changes)\n"
+            "belief: Deep, internal negative core beliefs and convictions about oneself or the world (The 'Why').\n"
+            "pattern: Recurring, observable behaviors or emotional reactions in specific situations, mostly negative (The 'How').\n"
             "goal: Wishes, future plans, or personal development goals.\n"
             "strengths: Resources, skills, and positive traits of the user.\n"
             "safe_place: The mental or real comfort zone/safe place of the user."

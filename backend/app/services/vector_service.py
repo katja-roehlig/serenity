@@ -94,8 +94,13 @@ class VectorService:
                 logger.info("User data successfully added")
                 return True
             except Exception as e:
-                logger.exception(f"Memory Store Error: Failed to add data")
-        return False
+                logger.warning(f"Memory Store Error: Failed to add data two times")
+                if (
+                    attempt == 1
+                ):  # Beim zweiten Fehlschlag (Index 1) werfen wir das Handtuch!
+                    raise RuntimeError(
+                        "ChromaDB add_memory failed after 2 attempts"
+                    ) from e
 
     async def search_memory(self, metadata: dict, embedding: list[float], status: str):
         search_filter = {
@@ -116,7 +121,7 @@ class VectorService:
             return result
         except Exception as e:
             logger.exception("Memory Store Error: Failed do similarity search")
-        return False
+            raise
 
     async def delete_memory(self, ids: Union[str, List[str]]):
         if isinstance(ids, str):
@@ -146,9 +151,12 @@ class VectorService:
 
     async def update_memory(self, content, embedding, metadata):
         success = await self.delete_memory(metadata["id"])
-        if success:
-            return self.add_memory(content, embedding, metadata)
-        return False
+        if not success:
+            logger.error(
+                f"Critical: Update failed because old vector could not be deleted from db"
+            )
+            raise RuntimeError("VectorDB deletion failed during update process")
+        return self.add_memory(content, embedding, metadata)
 
     async def get_user_memories_for_serenity(self, user_id: str, text: str):
         search_filter = {"$and": [{"user_id": user_id}, {"status": "active"}]}

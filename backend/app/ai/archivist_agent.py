@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 import os
 from typing import List, Sequence, TypedDict, cast
+import uuid
 from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -32,6 +33,7 @@ analyze_model = ChatOpenAI(
 class ArchivistState(TypedDict):
     messages: Sequence[BaseMessage]
     user_id: str
+    user_name: str
     found_items: List[MemoryItem]
 
 
@@ -62,9 +64,11 @@ async def save_information(state: ArchivistState, db: AsyncSession):
     print("--- NODE: SAVE INFORMATION ---")
     user_id = state["user_id"]
     new_infos = state["found_items"]
+    print(f"NEW INFOS: {new_infos}")
+    user_name = state.get("user_name", "")
     for info in new_infos:
         metadata = {
-            "id": info.id,
+            "id": str(uuid.uuid4()),
             "user_id": user_id,
             "category": info.category,
             "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -72,9 +76,9 @@ async def save_information(state: ArchivistState, db: AsyncSession):
         content = info.content
         reasoning = str(info.reasoning) if info.reasoning else ""
         if info.category in ["current_situation", "memory", "safe_place"]:
-            await handle_life_data(content, metadata, db)
+            await handle_life_data(content, metadata, user_name, db)
         elif info.category in ["belief", "pattern", "strengths", "goal"]:
-            await handle_supposed_data(content, reasoning, metadata, db)
+            await handle_supposed_data(content, reasoning, metadata, user_name, db)
         else:
             logger.warning(f"Unknown category: {info.category}")
     return {}
