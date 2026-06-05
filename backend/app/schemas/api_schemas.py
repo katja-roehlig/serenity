@@ -1,4 +1,5 @@
 from typing import List, Literal, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -36,7 +37,7 @@ class UserCreate(NewBaseModel):
 
 
 class UserRead(NewBaseModel):
-    id: int
+    id: UUID
     mail: EmailStr
     nickname: str
 
@@ -45,7 +46,7 @@ class UserRead(NewBaseModel):
 
 
 class UserBasic(NewBaseModel):
-    id: int
+    id: UUID
     mail: EmailStr
     nickname: str
     is_admin: bool
@@ -79,7 +80,7 @@ class ChatItem(NewBaseModel):
 
 class UserProfile(NewBaseModel):
     id: str  # UUID
-    user_id: int  # ID des Benutzers (Secondary Key)
+    user_id: UUID  # ID des Benutzers (Secondary Key)
     category: str
     content: str
     reasoning: List[str] | None = None

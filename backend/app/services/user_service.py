@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import and_, delete, or_, select
-from app.models.models import UserProperty, User
+from app.models.models import User, UserProperty
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,8 +26,8 @@ class UserService:
         user = result.scalar_one_or_none()
         return user
 
-    async def get_one_user(self, db, user_id):
-        query = select(User).where(User.id == int(user_id))
+    async def get_one_user(self, db, user_id: str):
+        query = select(User).where(User.id == str(user_id))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
         return user

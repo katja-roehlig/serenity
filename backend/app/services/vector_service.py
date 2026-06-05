@@ -167,6 +167,15 @@ class VectorService:
         )
         return result if result else []
 
+    async def delete_all_by_user_id(self, user_id: str):
+        try:
+            # LangChain erlaubt das Filtern über das 'where'-Dictionary in den Metadaten
+            await self.memory_store.adelete(where={"user_id": user_id})
+            return True
+        except Exception as e:
+            logger.error(f"Fehler beim Löschen der user_id {user_id} aus Chroma: {e}")
+            return False
+
     async def get_memories_to_develop(
         self, user_id
     ):  # nur zur Überprüfung, was gespeichert ist in der developer-route
@@ -176,7 +185,7 @@ class VectorService:
         )
         return results
 
-    async def delete_all_user_memories(self, user_id: int):
+    async def delete_all_user_memories(self, user_id):
         import asyncio
 
         loop = asyncio.get_running_loop()

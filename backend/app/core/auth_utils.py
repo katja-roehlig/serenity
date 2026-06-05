@@ -42,7 +42,7 @@ def create_access_token(data: dict):
     return token
 
 
-def decode_acces_token(token: str):
+def decode_acces_token(token: str) -> str | None:
     try:
         decoded_token = jwt.decode(token, str(SECRET_KEY), algorithms=["HS256"])
         user_id = decoded_token.get("sub")

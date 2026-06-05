@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 async def update_user(db, onboarding_data, user):
-    query = select(User).where(User.id == int(user.id))
+    query = select(User).where(User.id == str(user.id))
     result = await db.execute(query)
     update_user = result.scalar_one_or_none()
     if not update_user:

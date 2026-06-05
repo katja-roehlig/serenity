@@ -243,7 +243,7 @@ async def handle_chat(
         },
     }
     serenity_core_agent = create_serenity_core_agent(db)
-    message_limit = 6
+    message_limit = 8
     overlap = 4
     # hier wird der Archivist_Agent aktiviert!
     chat_state = serenity_core_agent.get_state(config)
@@ -376,6 +376,12 @@ async def delete_user(
             db=db,
             user_id=current_user.id,
         )
+        chroma_cleanup = await VECTOR_SERVICE.delete_all_by_user_id(
+            str(current_user.id)
+        )
+        if not chroma_cleanup:
+            raise Exception("Could not wipe user_id metadata from vector DB")
+
     except (SQLAlchemyError, VectorError, ValueError) as error:
         await db.rollback()
         logger.error(
@@ -388,7 +394,7 @@ async def delete_user(
 
 # only test-functions
 @app.get("/vectordata/{user_id}")
-async def test_vector_db(user_id: int):
+async def test_vector_db(user_id: str):
     if os.getenv("ENVIRONMENT") != "development":
         raise HTTPException(status_code=403, detail="Forbidden in production")
 
@@ -397,7 +403,7 @@ async def test_vector_db(user_id: int):
 
 
 @app.get("/clean-vectordata/{user_id}")
-async def clean_vector_db(user_id: int):
+async def clean_vector_db(user_id: str):
     if os.getenv("ENVIRONMENT") != "development":
         raise HTTPException(status_code=403, detail="Forbidden in production")
     await VECTOR_SERVICE.delete_all_user_memories(user_id=user_id)

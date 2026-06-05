@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import JSON, Boolean, Column, ForeignKey, Integer, Text, String, null
 from app.core.database import Base
 from sqlalchemy.orm import relationship
@@ -22,7 +24,7 @@ class Exercise(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     mail = Column(String(100), nullable=False, unique=True, index=True)
     hashed_password = Column(String, nullable=False)
     nickname = Column(String(50), nullable=False)
@@ -36,7 +38,9 @@ class User(Base):
 class UserProperty(Base):
     __tablename__ = "user_properties"
     id = Column(String, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     category = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     reasoning = Column(JSON, nullable=True)

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/axios";
 
 export interface UserProfile {
-  id: number;
+  id: string;
   mail: string;
   nickname: string;
   isAdmin: boolean;
