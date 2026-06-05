@@ -29,6 +29,7 @@ async def activate_archivist_agent(
         return True
     except Exception as e:
         logger.error(f"Archivist error in background execution: {e}", exc_info=True)
+        raise
 
 
 async def get_user_resources(db, current_user):
