@@ -130,7 +130,9 @@ class VectorService:
             ids_to_delete = ids
         try:
             await self.memory_store.adelete(ids=ids_to_delete)
-            logger.info("User Data successfully deleted from VectorDB: {memory_id}")
+            logger.info(
+                f"User Data successfully deleted from VectorDB: {ids_to_delete}"
+            )
             return True
 
         except Exception as e:

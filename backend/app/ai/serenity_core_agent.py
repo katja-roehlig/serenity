@@ -132,7 +132,6 @@ async def get_matching_exercise(state: AgentState):
     exercise_id = await VECTOR_SERVICE.search_exercise(summary_text)
     return {
         "exercise_id": exercise_id,
-        "is_in_exercise": True,
     }
 
 
@@ -147,6 +146,7 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
         logger.warning(f"No exercise with id {exercise_id} in database")
         return {}
     return {
+        "is_in_exercise": True,
         "exercise_goal": exercise.goal,
         "exercise_expertise": exercise.expertise,
         "exercise_instructions": exercise.instructions,
@@ -223,9 +223,6 @@ async def chat_therapist(state: AgentState):
             auch wenn sie dann länger dauert. 
             Wenn die Übung beendet ist, frage: 'Wie geht es dir jetzt? Hat dir diese Übung geholfen'
             ENDE DER KOMPLETTEN ÜBUNG: Setze das Signal [FINISHED] ans Ende deiner Antwort."""
-        else:
-            system_prompt += """
-            Es gibt keine passende Übung. Rede mit dem user und sei aufmerksam"""
 
     # Nachrichtenliste für KI zusammen bauen
     # System-Prompt und hängen den bisherigen Chatverlauf an

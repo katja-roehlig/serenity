@@ -42,10 +42,11 @@ class MemoryItem(BaseModel):
             "belief: Deep, internal negative core beliefs and convictions about oneself or the world (The 'Why').\n"
             "pattern: Recurring, observable behaviors or emotional reactions in specific situations, mostly negative (The 'How').\n"
             "goal: Wishes, future plans, or personal development goals.\n"
-            "strengths: Resources, skills, and positive traits of the user.\n"
+            "strengths: Internal personal skills, positive character traits, learned abilities, or notable personal achievements (e.g., resilience, leadership, fitness).\n"
             "safe_place: The mental or real comfort zone/safe place of the user."
         )
     )
+
     content: str = Field(
         description="Max 20-30 words. Fact-based, concise, to the point. Avoid metaphors or fluffy language."
     )

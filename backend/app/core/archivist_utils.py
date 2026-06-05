@@ -29,24 +29,26 @@ async def handle_life_data(
             # Wenn ja und ktegorien safe_place und memory, nix tun
             if metadata["category"] == "memory" or metadata["category"] == "safe_place":
                 return
-        # wenn Kategorie current_situation content überschreiben in Vektor und SQL, in SQL Ablaufdatum verlängern!
-        old_content = doc.page_content
-        success = await VECTOR_SERVICE.update_memory(content, embedding, metadata)
-        if success:
-            try:
-                metadata["expires_at"] = (
-                    datetime.now(timezone.utc) + timedelta(weeks=3)
-                ).strftime("%Y-%m-%d")
-                await USER_PROPERTY_SERVICE.update_data(db, content, metadata)
-                return
-            except Exception as e:
-                # alten content wieder herstellen!
-                logger.error(f"SQLite Error within updating current_situation: {e}")
-                original_embedding = await VECTOR_SERVICE.create_embedding(old_content)
-                await VECTOR_SERVICE.update_memory(
-                    old_content, original_embedding, metadata
-                )
-                raise
+            # wenn Kategorie current_situation content überschreiben in Vektor und SQL, in SQL Ablaufdatum verlängern!
+            old_content = doc.page_content
+            success = await VECTOR_SERVICE.update_memory(content, embedding, metadata)
+            if success:
+                try:
+                    metadata["expires_at"] = (
+                        datetime.now(timezone.utc) + timedelta(weeks=3)
+                    ).strftime("%Y-%m-%d")
+                    await USER_PROPERTY_SERVICE.update_data(db, content, metadata)
+                    return
+                except Exception as e:
+                    # alten content wieder herstellen!
+                    logger.error(f"SQLite Error within updating current_situation: {e}")
+                    original_embedding = await VECTOR_SERVICE.create_embedding(
+                        old_content
+                    )
+                    await VECTOR_SERVICE.update_memory(
+                        old_content, original_embedding, metadata
+                    )
+                    raise
     if VECTOR_SERVICE.add_memory(content, embedding, metadata):
         try:
             if metadata["category"] == "current_situation":
@@ -157,7 +159,7 @@ def update_metadata(doc: Document, new_reasoning: str):
 async def save_to_db(content: str, metadata: dict, user_name: str, db):
     final_content = content
     if user_name.strip():
-        pattern = r"\b(der\s+|die\s+|den\s+|dem\s+|des\s+)?(user|nutzer)\b"
+        pattern = r"\b(der\s+|die\s+|den\s+|dem\s+|des\s+|das\s+)?(users|nutzers|user|nutzer)\b"
         final_content = re.sub(pattern, user_name, final_content, flags=re.IGNORECASE)
         logger.info(f"User name was successfully replaced: {user_name}")
     else:

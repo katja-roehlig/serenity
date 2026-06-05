@@ -49,8 +49,9 @@ async def analyze_messages(state: ArchivistState):
         Wenn die Nachrichten belanglos waren, nichts Neues oder nur eine Übung enthalten, gib eine leere Liste zurück.
     2.  Sprache & Stil: Schreibe die Felder 'content' und 'reasoning' auf Deutsch. 
         Halte den 'content' extrem knackig auf maximal 20-30 Wörter begrenzt, faktenbasiert und ohne Floskeln. Nenne konkrete Namen, falls erwähnt.
-
-    """
+    3.  Strikte Thementrennung (Atomare Einträge): Wenn der User in einem Atemzug von zwei verschiedenen Themen (wie z. B. Beruf, Gesundheit, Haustiere oder Partnerschaft) erzählt, 
+        musst du diese in zwei separate Einträge mit derselben Kategorie aufteilen. 
+        Jeder Eintrag darf nur ein einziges, klares Thema behandeln."""
 
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
 
