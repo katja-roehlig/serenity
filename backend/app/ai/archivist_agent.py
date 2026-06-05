@@ -39,19 +39,21 @@ class ArchivistState(TypedDict):
 
 async def analyze_messages(state: ArchivistState):
     print("--- NODE: ANALYZE MESSAGES ---")
-    system_prompt = f"""
-    Du bist ein empathischer, hochpräziser psychologischer Analyst für eine App zur Persönlichkeitsentwicklung. 
-    Analysiere diese Nachrichten des Users. 
-    Nutze die Definitionen der Kategorien aus dem übergebenen Pydantic-Schema, um relevante Langzeit-Erkenntnisse zu extrahieren.
 
-    WICHTIGE REGELN:
-    1.  Relevanz: Erstelle nur Einträge für Kategorien, wenn du im Text klare Beweise dafür findest. 
-        Wenn die Nachrichten belanglos waren, nichts Neues oder nur eine Übung enthalten, gib eine leere Liste zurück.
-    2.  Sprache & Stil: Schreibe die Felder 'content' und 'reasoning' auf Deutsch. 
-        Halte den 'content' extrem knackig auf maximal 20-30 Wörter begrenzt, faktenbasiert und ohne Floskeln. Nenne konkrete Namen, falls erwähnt.
-    3.  Strikte Thementrennung (Atomare Einträge): Wenn der User in einem Atemzug von zwei verschiedenen Themen (wie z. B. Beruf, Gesundheit, Haustiere oder Partnerschaft) erzählt, 
-        musst du diese in zwei separate Einträge mit derselben Kategorie aufteilen. 
-        Jeder Eintrag darf nur ein einziges, klares Thema behandeln."""
+    system_prompt = f"""
+    Du bist der hochpräzise biografische Analyst und Chronist für eine App zur Persönlichkeitsentwicklung. 
+    Deine Aufgabe ist es, die Lebensdaten des Users sachlich zu strukturieren und seine inneren Baustellen für die Weiterentwicklung zu kartografieren.
+
+    STRATEGIE FÜR VOLLSTÄNDIGKEIT:
+    1. Lies den Chatverlauf. Nutze die Definitionen der Kategorien aus dem Pydantic-Schema.
+    2. Gehe den Text im Geiste für jede der 7 Kategorien einzeln durch. Beginne mit der ersten und gucke, ob du Infos findest, nimm dann die zweite Lategorie, dann die dritte und so weiter. 
+    Wenn du Beweise für eine Kategorie findest, erstelle einen Eintrag. Wenn nicht, überspringe sie.
+    3. Brich die Analyse nicht ab, sobald du 1-2 Einträge hast. Häufig verstecken sich in den Nachrichten Informationen viele verschiedene Kategorien.
+    4. Strikte Thementrennung (Atomare Einträge): Wenn der User von zwei verschiedenen Themen erzählt, erstelle zwei separate Einträge. Wichtig für ChromaDB!
+    5. Sprache: Schreibe die Felder 'content' und 'reasoning' immer auf Deutsch und ich der 1.Person Singular (Ich-Perspektive).
+
+    Falls die Nachrichten absolut keine relevanten Informationen enthalten, gib eine leere Liste zurück.
+    """
 
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
 

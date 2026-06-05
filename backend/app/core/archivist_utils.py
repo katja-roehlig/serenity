@@ -25,7 +25,8 @@ async def handle_life_data(
     # für alle Kategorien gucken, ob es die Info schon gibt
     if result:
         doc, score = result[0]
-        if score <= 0.2:
+        print(f"LIFE-DATA: OLD: {doc.page_content} - SCORE: {score} - NEW: {content}")
+        if score <= 0.9:
             # Wenn ja und ktegorien safe_place und memory, nix tun
             if metadata["category"] == "memory" or metadata["category"] == "safe_place":
                 return
@@ -75,7 +76,8 @@ async def handle_supposed_data(
     )
     if active_result:
         doc, score = active_result[0]
-        if score <= 0.2:
+        print(f"ACTIVE-RESULT: OLD:{doc.page_content} - score: {score} - NEW:{content}")
+        if score <= 0.9:
             return
     await handle_hidden_search(
         content, reasoning, metadata, user_name, embedding, expiration_date, db
@@ -96,7 +98,8 @@ async def handle_hidden_search(
     )
     if hidden_result:
         doc, score = hidden_result[0]
-        if score <= 0.2:
+        print(f"HIDDEN-RESULT: OLD:{doc.page_content} - score: {score} - NEW:{content}")
+        if score <= 0.9:
             original_metadata = doc.metadata.copy()
             updated_metadata = update_metadata(doc, reasoning)
             existing_content = doc.page_content
@@ -158,9 +161,15 @@ def update_metadata(doc: Document, new_reasoning: str):
 
 async def save_to_db(content: str, metadata: dict, user_name: str, db):
     final_content = content
+    reasoning = metadata.get("reasoning")
+    final_reasoning = []
     if user_name.strip():
         pattern = r"\b(der\s+|die\s+|den\s+|dem\s+|des\s+|das\s+)?(users|nutzers|user|nutzer)\b"
         final_content = re.sub(pattern, user_name, final_content, flags=re.IGNORECASE)
+        if reasoning:
+            for reason in reasoning:
+                new_reason = re.sub(pattern, user_name, reason, flags=re.IGNORECASE)
+                final_reasoning.append(new_reason)
         logger.info(f"User name was successfully replaced: {user_name}")
     else:
         logger.warning("No Username available. Content stays in original version.")
@@ -171,7 +180,7 @@ async def save_to_db(content: str, metadata: dict, user_name: str, db):
         content=final_content,
         created_at=metadata["created_at"],
         expires_at=metadata.get("expires_at"),
-        reasoning=metadata.get("reasoning"),
+        reasoning=final_reasoning,
         status=metadata["status"],
         counter=metadata.get("counter"),
     )

@@ -45,9 +45,9 @@ logger = logging.getLogger(__name__)
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     user_id: str
-    is_user_ready: NotRequired[bool]
-    is_exercise_useful: NotRequired[bool]
-    has_enough_info: NotRequired[bool]
+    is_user_overwhelmed_or_stuck: NotRequired[bool]
+    is_exercise_needed: NotRequired[bool]
+    has_user_background: NotRequired[bool]
     needs_research: NotRequired[bool]
     is_in_exercise: NotRequired[bool]
     exercise_goal: NotRequired[Optional[str]]
@@ -67,15 +67,50 @@ def doorman(state: AgentState):
 
 async def check_user_state(state: AgentState):
     print("--- CHECK USER STATE ---")
-    user_data = state.get("user_data", {})
-    user_context = create_user_context(user_data)
-    system_prompt = f"""
-    Du bist die Analyse-Einheit von Serenity. 
-    {user_context}
-    Analysiere den Chatverlauf und entscheide präzise über die nächsten Schritte.
-    Nutze das Onboarding-Wissen, um zu beurteilen, ob wir genug Infos haben. 
-    Wenn der User explizit nach einer Übung fragt, dann gib ihm auch eine, wenn du genügend Infos über ihn hast.
-    """
+    # user_data = state.get("user_data", {})
+    # user_context = create_user_context(user_data)  #  {user_context}
+    # system_prompt = f"""
+    # Du bist die Analyse-Einheit von Serenity.
+    # Deine Standardentscheidung ist KEINE Übung.
+    # Eine Übung ist die Ausnahme, nicht die Regel.
+    # Normale Angst, Nervosität, Unsicherheit, Traurigkeit, Stress oder Sorgen sind kein Grund für eine Übung.
+    # Solange der User neue Informationen liefert, reflektieren kann oder sinnvolle Rückfragen möglich sind, ist keine Übung notwendig.
+
+    # Eine Übung ist nur sinnvoll, wenn:
+    # - der User ausdrücklich eine Übung möchte
+    # - der User in einer Gedankenschleife feststeckt
+    # - der User wiederholt dieselben Gedanken ohne neue Erkenntnisse
+    # - der User so überwältigt ist, dass weitere Reflexion momentan wenig Nutzen bringt
+    # """
+    # system_prompt = """
+    # Du bist die Analyse-Einheit von Serenity.
+    # Deine absolute Standard-Entscheidung ist KEINE Übung (alle Variablen auf False).
+    # Eine Übung ist eine Notbremse, kein normales Werkzeug.
+
+    # WICHTIGE REGELN FÜR DIE EVALUIERUNG:
+    # 1. Emotionen wie Angst, Stress, Trauer oder Nervosität sind NORMALE Gesprächsinhalte. Der User soll und muss darüber sprechen.
+    # Normale Angst, Nervosität, Unsicherheit, Traurigkeit, Stress oder Sorgen sind kein Grund für eine Übung.
+    # 2. Solange der User neue Informationen liefert, reflektieren kann oder sinnvolle Rückfragen möglich sind, ist keine Übung notwendig.
+
+    # Eine Übung ist nur sinnvoll, wenn:
+    # - der User ausdrücklich eine Übung möchte
+    # - der User dissoziert ist
+    # - der User wiederholt dieselben Gedanken ohne neue Erkenntnisse
+
+    #  """
+
+    system_prompt = """
+    Du bist die Analyse-Einheit von Serenity. Standard ist  alle Variablen auf FALSE (Keine Übung).
+
+    REGELN FÜR DIE EVALUIERUNG:
+    1. Ersten Kontakt blockieren: Bei der ersten Nachricht des Users (Turn 1) setzt du alles auf FALSE.
+    2. Emotionen wie Angst, Stress, Trauer oder Nervosität sind NORMALE Gesprächsinhalte. Der User soll und muss darüber sprechen. 
+    3. Der Alarm-Filter: Schalte alle Variablen auf TRUE, sobald das System des Users überlastet ist. Das erkennst du an:
+        - Gedankenschleifen ('Mein Kopf dreht sich im Kreis', 'ich hänge fest')
+        - Akuter Panik / Angst ('Ich zittere', 'ich kriege keine Luft', 'Todesangst')
+        - Dissoziation ('Ich fühle mich taub', 'alles ist weit weg', 'kann nicht denken')
+    4. Retter-Modus: Ignoriere, ob der Chatbot noch Ratschläge gibt. Wenn der User blockiert oder im Alarmzustand ist, bricht das Gespräch ab. Dann gilt: TRUE. 
+"""
 
     messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
 
@@ -85,10 +120,11 @@ async def check_user_state(state: AgentState):
     # Daten werden zu KI geschickt und ausgefühlt in einem ai_result-Objekt zurückgegeben
     ai_result = cast(StateAnalysis, await structured_llm.ainvoke(messages))
     # Wir geben die Ergebnisse zurück, um die Akte (State) zu aktualisieren
+    print(f"AI_RESULT: {ai_result}")
     return {
-        "is_user_ready": ai_result.is_user_ready,
-        "is_exercise_useful": ai_result.is_exercise_useful,
-        "has_enough_info": ai_result.has_enough_info,
+        "is_user_overwhelmed_or_stuck": ai_result.is_user_overwhelmed_or_stuck,
+        "is_exercise_needed": ai_result.is_exercise_needed,
+        "has_user_background": ai_result.has_user_background,
         "needs_research": ai_result.needs_research,
     }
 
@@ -98,9 +134,9 @@ def decision_after_check(state: AgentState):
     if state.get("needs_research", False):
         return "web_search"  # node
     if (
-        state.get("is_user_ready", False)
-        and state.get("is_exercise_useful", False)
-        and state.get("has_enough_info", False)
+        state.get("is_user_overwhelmed_or_stuck", False)
+        and state.get("is_exercise_needed", False)
+        and state.get("has_user_background", False)
     ):
         return "get_matching_exercise"  # node
     return "get_user_memory"
@@ -189,26 +225,45 @@ async def chat_therapist(state: AgentState):
     memories = state.get("memory_results", [])
 
     system_prompt = f"""
-    Du bist Serenity, der „Archetypische Metaphern-Coach“ – eine einfühlsame, präsente und radikal loyale Begleiterin für Persönlichkeitsentwicklung. 
-    Dein Grundstil ist kraftvoll, strukturiert und empathisch.
-    WICHTIGSTE PRIORITÄT (USER-KONTEXT & MERKMALE):
-    Hier sind die fixen Daten des Users (inklusive Geschlecht für Grammatik und Spitznamen):
+
+    Du bist Serenity – eine einfühlsame, kluge und loyale Begleiterin für Persönlichkeitsentwicklung.
+
+    WICHTIGSTE PRIORITÄT:
+    Hier sind die fixen Daten des Users. Nutze sie:
     {user_context}"""
+
     if memories:
-        system_prompt += "\n\nZUSÄTZLICHER KONTEXT & AKTUELLES THEMA:"
+        system_prompt += "\n\n Falls weitere Infos zum User vorhanden sind, beziehe sie aktiv in die Unterhaltung ein und erkenne wiederkehrende Muster, Glaubenssätze und Entwicklungen."
         for memory in memories:
             system_prompt += f"\n- {memory}"
     system_prompt += f"""
         
-
-    DEIN DIALOG-VERHALTEN (SITUATIV & FLEXIBEL):
-    1. DER USER STEHT IM FOKUS: Reagiere immer individuell auf das, was der User im aktuellen Moment braucht. Deine absolute Hauptaufgabe ist es, zuzuhören, Gefühle messerscharf zu SPIEGELN und dem User das Gefühl zu geben, vollkommen verstanden und sicher zu sein.
-    2. METAPHERN ALS GEWÜRZ: Nutze lebendige Alltags-Metaphern (Haus, Akku, Kompass), wenn sie dem User helfen, sein Chaos besser zu verstehen. Wenn der User stark emotional oder verzweifelt ist, lass die Metaphern komplett weg und sei einfach nur menschlicher Halt.
-    3. PEPP & SPITZNAMEN: Bring eine motivierende, frische Energie in das Gespräch, sobald der User bereit dafür ist. Du darfst ihm ab und zu stärkende, zum Geschlecht passende Spitznamen geben (Frau: Königin, Hüterin / Mann: König, Hüter). Nutze sie aber niemals am Satzanfang und niemals inflationär, sondern nur als seltenes, kraftvolles Highlight. Nutze niemals "Kapitän".
-    4. KEINE ZWANGS-PLÄNE: Plane nichts voraus und erstelle keine To-Do-Listen. 
-    STIL & FORMAT:
-    - Antworte extrem kurz und knackig (maximal 50-60 Wörter).
-    - Nutze Markdown (Fettdruck für emotionale Anker, Absätze für Struktur).
+    1.  DER USER STEHT IM FOKUS
+        Interessiere dich aufrichtig für die innere Welt des Users.
+        Suche nach der Geschichte hinter Gefühlen, Gedanken und Verhalten.
+        Emotionen sind nicht das Ziel der Analyse, sondern die Tür zu mehr Verständnis.
+    2.  ECHTES GEGENÜBER
+        Du bist nicht nur Zuhörerin.
+        Du darfst Beobachtungen, Vermutungen, Begeisterung, Anerkennung und sanfte Konfrontationen einbringen.
+        Formuliere Eindrücke als Beobachtung, nicht als absolute Wahrheit.
+    3.  FRAGEN MIT MASS
+        Stelle Fragen, wenn sie neue Erkenntnisse ermöglichen.
+        Manchmal genügt eine Beobachtung, ein Gedanke oder eine Metapher.
+    4.  METAPHERN ALS GEWÜRZ
+        Nutze lebendige Bilder und Alltagsmetaphern, wenn sie dem User helfen, sich selbst besser zu verstehen.
+    5.  PEPP & SPITZNAMEN
+        Bringe Wärme, Leichtigkeit und motivierende Energie ein, wenn es passt.
+        Du darfst selten und gezielt passende Spitznamen verwenden (z.B. Königin, Hüterin, König, Hüter).
+        Nie inflationär und niemals am Satzanfang.
+    6.  VARIATION
+        Vermeide feste Antwortmuster.
+        Nicht jede Antwort braucht Fragen, Zusammenfassungen oder einen Abschlusssatz.
+        Reagiere wie ein echter Gesprächspartner.
+    7.  STIL
+        Antworte meist kurz (ca. 60–120 Wörter).
+        Nutze nur so wenige Worte wie möglich.
+        In emotionalen oder komplexen Situationen darfst du ausführlicher werden.
+        Schreibe übersichtlich, nutze oft Absätze, Markdown und gelegentlich passende Emojis.
     
      """
 
@@ -219,9 +274,8 @@ async def chat_therapist(state: AgentState):
             AKTUELL: Deine Übung hat das Ziel '{state.get('exercise_goal')}'.
             HINTERGRUND: {state.get('exercise_expertise')}
             DEINE ANLEITUNG: {state.get('exercise_instructions')}
-            AUFGABE: Begleite den User Schritt für Schritt durch diese Übung. Passe die Übung auf seine Situation an, 
-            auch wenn sie dann länger dauert. 
-            Wenn die Übung beendet ist, frage: 'Wie geht es dir jetzt? Hat dir diese Übung geholfen'
+            AUFGABE: Begleite den User SCHRITT FÜR SCHRITTdurch diese Übung. Passe die Übung auf seine Situation an, 
+            auch wenn sie dann länger dauert.
             ENDE DER KOMPLETTEN ÜBUNG: Setze das Signal [FINISHED] ans Ende deiner Antwort."""
 
     # Nachrichtenliste für KI zusammen bauen
