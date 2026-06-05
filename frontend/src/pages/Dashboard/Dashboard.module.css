@@ -13,7 +13,10 @@
   margin-right: 4rem;
   /*margin-left: -3rem;  Gleicht den Gap der Spalten aus */
 }
-
+.heading {
+  padding-top: 3rem;
+  padding-left: 4.5rem;
+}
 /* einzelnenSpalten */
 /* .myMasonryGridColumn {
 /*padding-right: 2rem; /* Abstand (Gap) zwischen den Spalten */

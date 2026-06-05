@@ -21,6 +21,7 @@ export const Settings = async () => {
     if (!check) return;
     try {
       await api.delete("/settings/user");
+      localStorage.removeItem(`Chat ${userData.id}`);
       toast.success("Dein Profil wurde erfolgreich gelöscht");
       navigate("/");
     } catch (error) {

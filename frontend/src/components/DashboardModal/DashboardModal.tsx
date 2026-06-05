@@ -38,20 +38,25 @@ export function DashboardModal({
           </Dialog.Title>
           {category === "currentSituation" && (
             <>
-              <p>
-                Diese Information wird am{" "}
-                <strong>{formatDate(item.expiresAt)}</strong>
-                gelöscht.
-              </p>
-              <p>Um sie zu behalten, speichere sie als Erinnerung</p>
-              <button>Speichern</button>
+              <div className={styles.information}>
+                <p>
+                  Diese Information wird am{" "}
+                  <strong>{formatDate(item.expiresAt)}</strong> gelöscht.
+                </p>
+                <p>Um sie zu behalten, speichere sie als Erinnerung</p>
+              </div>
+              <button className={styles.safeButton}>Speichern</button>
             </>
           )}
           {category !== "currentSituation" && !isSmallInfo && (
             <>
-              <p>Erfasst am: {formatDate(item.createdAt)}</p>
-              <p>Sie wurde in folgenden Zusammenhängen von Serenity erfasst:</p>
-              <p>{item.reasoning}</p>
+              <p className={styles.date}>
+                Erfasst am: {formatDate(item.createdAt)}
+              </p>
+              <p className={styles.description}>
+                Die Info wurde in folgenden Zusammenhängen von Serenity erfasst:
+              </p>
+              <p className={styles.reasoning}>{item.reasoning}</p>
             </>
           )}
           {isSmallInfo && (
@@ -61,9 +66,9 @@ export function DashboardModal({
               </p>
             </div>
           )}
-          <Dialog.Close asChild>
+          {/* <Dialog.Close asChild>
             <button className={styles.closeButton}>Schließen</button>
-          </Dialog.Close>
+          </Dialog.Close> */}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

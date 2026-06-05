@@ -11,28 +11,59 @@
 /*Modal-Fenster */
 .dialogContent {
   background-color: #ffffff;
+  flex-direction: column;
+  display: flex;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%); /* Perfekte Zentrierung */
-  width: 90vw;
+  width: fit-content;
+  height: fit-content;
+  /*width: 90vw;*/
   max-width: 500px;
   max-height: 85vh;
   padding: 24px;
   animation: contentShow 250ms ease-out;
   z-index: 1001;
 }
+.dialogContent p {
+  margin-block: var(--space-sm);
+}
+.date {
+  text-align: center;
+  color: var(--text-primary);
+  padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--text-primary);
+}
 
 .dialogContent:focus {
   outline: none;
 }
-
+.description {
+  font-weight: 500;
+  line-height: 1.6;
+}
+.reasoning {
+  text-align: left;
+  margin-top: 0 !important;
+  line-height: 2;
+}
+.safeButton {
+  margin: 0 auto;
+  background-color: var(--bg-surface-3);
+  padding: 1rem 6rem;
+  margin-block: var(--space-md);
+}
+.information {
+  padding: var(--space-md);
+  line-height: 2;
+}
 .closeButton {
   margin-top: 20px;
   padding: 10px 16px;
-  background-color: #f1f3f5;
+  background-color: var(--bg-button-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -84,4 +115,5 @@
   margin: 0;
   font-size: 15px;
   color: #333;
+  padding: var(--space-md);
 }

@@ -114,7 +114,7 @@ export const Dashboard = () => {
   };
   return (
     <main className={styles.main}>
-      <h2>Dein Dashboard</h2>
+      <h2 className={styles.heading}>Dein Dashboard</h2>
       <Masonry
         breakpointCols={breakpointColumnsObj}
         className={styles.myMasonryGrid}

@@ -36,7 +36,7 @@ export const DashboardSection = ({
   const contentLength = property.length;
   const [isSectionOpen, setIsSectionOpen] = useState(false);
   const [visibleItemCount, setVisibleItemCount] = useState(4);
-  const isGridStyle = category === "strengths";
+  const isStrengths = category === "strengths";
   const displayedItems = property ? property.slice(0, visibleItemCount) : [];
   const [modalOpen, setModalOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<DashboardCategory | null>(null);
@@ -76,11 +76,12 @@ export const DashboardSection = ({
 
       {hasContent && isSectionOpen && (
         <>
-          <ul className={isGridStyle ? styles.cardGrid : styles.rowList}>
+          {/* <ul className={isGridStyle ? styles.cardGrid : styles.rowList}> */}
+          <ul className={styles.rowList}>
             {displayedItems?.map((item) => (
               <li
                 key={item.id}
-                className={`${styles.card} ${isGridStyle ? styles.cardContainer : styles.rowContainer} `}
+                className={`${styles.rowContainer} ${isStrengths ? styles.cards : ""} `}
               >
                 <p className={styles.content}>{item.content}</p>
                 <DropdownMenu.Root>
