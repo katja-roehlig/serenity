@@ -172,7 +172,9 @@ async def register_user(user_reg: UserCreate, db: AsyncSession = Depends(get_db)
     hashed_pwd = hash_password(user_reg.password)
     # neuen user anlegen
     new_user = User(
-        mail=user_reg.mail, nickname=user_reg.nickname, hashed_password=hashed_pwd
+        mail=user_reg.mail,
+        nickname=user_reg.nickname.capitalize(),
+        hashed_password=hashed_pwd,
     )
     # zur table user hinzufügen
     try:

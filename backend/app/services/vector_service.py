@@ -60,7 +60,7 @@ class VectorService:
             return None
         text, score = result[0]
         print(f"VEKTORSUCHE - ÜBUNG: {text.metadata.get('id')}: Score: {score}")
-        if score > 0.8:
+        if score > 0.85:
             logger.info(f"Score too high for a suitable exercise : {score}")
             return None
         exercise_id = text.metadata.get("id")

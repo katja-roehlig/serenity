@@ -102,7 +102,6 @@ export const ExerciseShow = () => {
               <PencilSimpleLineIcon size={28} />
               Übung bearbeiten
             </button>
-            #
           </div>
         </>
       )}

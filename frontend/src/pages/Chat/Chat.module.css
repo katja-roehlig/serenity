@@ -36,9 +36,7 @@
   border-bottom-left-radius: var(--radius-lg);
   width: 600px;
   max-width: 600px;
-  /* width: fit-content; */
   margin-bottom: 30px;
-  line-height: 1.5;
   word-wrap: break-word;
 }
 
@@ -47,6 +45,7 @@
   border-bottom-right-radius: var(--radius-lg);
   margin-left: auto;
   box-shadow: 2px 2px 8px #00000010;
+  line-height: 1.8;
 }
 
 .kiChat {
@@ -54,7 +53,6 @@
   border-top-left-radius: var(--radius-lg);
   box-shadow: -2px 2px 8px #00000010;
 }
-
 .label {
   display: none;
 }
@@ -67,7 +65,7 @@
   font-family: var(--font-text);
   field-sizing: content;
   padding: var(--space-lg);
-  padding-right: var(--space-xl);
+  padding-right: var(--space-xxl);
   border-radius: var(--radius-xl);
   border-color: var(--border-color-1);
   background-color: var(--white);
@@ -159,7 +157,7 @@
 }
 .markdownContent p {
   margin: 0 !important; /* Verhindert, dass der Text in der Blase nach oben/unten springt */
-  line-height: 1.5 !important;
+  line-height: 1.8 !important;
 }
 
 /* Falls die KI mehrere Absätze schickt, gib ihnen einen kleinen Abstand zueinander */

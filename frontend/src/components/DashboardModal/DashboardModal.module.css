@@ -60,6 +60,15 @@
   padding: var(--space-md);
   line-height: 2;
 }
+.reasoningList {
+  list-style-type: disc;
+  margin-inline: var(--space-lg);
+}
+
+.reasoningList li {
+  padding: var(--space-xs);
+}
+
 .closeButton {
   margin-top: 20px;
   padding: 10px 16px;

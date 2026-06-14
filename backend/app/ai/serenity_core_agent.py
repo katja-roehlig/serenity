@@ -67,37 +67,6 @@ def doorman(state: AgentState):
 
 async def check_user_state(state: AgentState):
     print("--- CHECK USER STATE ---")
-    # user_data = state.get("user_data", {})
-    # user_context = create_user_context(user_data)  #  {user_context}
-    # system_prompt = f"""
-    # Du bist die Analyse-Einheit von Serenity.
-    # Deine Standardentscheidung ist KEINE Übung.
-    # Eine Übung ist die Ausnahme, nicht die Regel.
-    # Normale Angst, Nervosität, Unsicherheit, Traurigkeit, Stress oder Sorgen sind kein Grund für eine Übung.
-    # Solange der User neue Informationen liefert, reflektieren kann oder sinnvolle Rückfragen möglich sind, ist keine Übung notwendig.
-
-    # Eine Übung ist nur sinnvoll, wenn:
-    # - der User ausdrücklich eine Übung möchte
-    # - der User in einer Gedankenschleife feststeckt
-    # - der User wiederholt dieselben Gedanken ohne neue Erkenntnisse
-    # - der User so überwältigt ist, dass weitere Reflexion momentan wenig Nutzen bringt
-    # """
-    # system_prompt = """
-    # Du bist die Analyse-Einheit von Serenity.
-    # Deine absolute Standard-Entscheidung ist KEINE Übung (alle Variablen auf False).
-    # Eine Übung ist eine Notbremse, kein normales Werkzeug.
-
-    # WICHTIGE REGELN FÜR DIE EVALUIERUNG:
-    # 1. Emotionen wie Angst, Stress, Trauer oder Nervosität sind NORMALE Gesprächsinhalte. Der User soll und muss darüber sprechen.
-    # Normale Angst, Nervosität, Unsicherheit, Traurigkeit, Stress oder Sorgen sind kein Grund für eine Übung.
-    # 2. Solange der User neue Informationen liefert, reflektieren kann oder sinnvolle Rückfragen möglich sind, ist keine Übung notwendig.
-
-    # Eine Übung ist nur sinnvoll, wenn:
-    # - der User ausdrücklich eine Übung möchte
-    # - der User dissoziert ist
-    # - der User wiederholt dieselben Gedanken ohne neue Erkenntnisse
-
-    #  """
 
     system_prompt = """
     Du bist die Analyse-Einheit von Serenity. Standard ist  alle Variablen auf FALSE (Keine Übung).

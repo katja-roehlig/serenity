@@ -56,7 +56,11 @@ export function DashboardModal({
               <p className={styles.description}>
                 Die Info wurde in folgenden Zusammenhängen von Serenity erfasst:
               </p>
-              <p className={styles.reasoning}>{item.reasoning}</p>
+              <ul className={styles.reasoningList}>
+                {item.reasoning?.map((reason) => (
+                  <li>{reason}</li>
+                ))}
+              </ul>
             </>
           )}
           {isSmallInfo && (

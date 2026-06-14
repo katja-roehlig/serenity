@@ -32,7 +32,8 @@
 .input:focus,
 .text:focus {
   outline: none;
-  border-color: var(--bg-button-primary); /* Deine Primärfarbe */
+  border-color: var(--text-start);
+  box-shadow: none;
 }
 
 .label {
@@ -59,7 +60,7 @@
   color: var(--bg-main);
   box-shadow: var(--box-shadow-1);
   cursor: pointer;
-  padding: 1rem, 6rem;
+  padding: 1rem 6rem;
 }
 .exButton:hover {
   transform: scale(1.1);

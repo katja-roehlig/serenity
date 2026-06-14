@@ -99,6 +99,7 @@ input {
   padding: var(--space-sm);
   color: #01040d;
   cursor: pointer;
+  outline: none;
 }
 textarea {
   outline: none;
