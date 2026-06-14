@@ -170,6 +170,9 @@
   background-color: var(--bg-secondary);
   color: var(--text-start-inverted);
 }
+.button:disabled {
+  background-color: rgb(233, 236, 249);
+}
 .buttonContainer {
   max-width: 800px;
   padding: 1rem 4rem 6rem;

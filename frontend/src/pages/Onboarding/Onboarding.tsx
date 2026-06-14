@@ -30,6 +30,7 @@ export const Onboarding = () => {
   const [gender, setGender] = useState<string>("");
   const [userStrengths, setUserStrengths] = useState<string[]>([]);
   const [safePlace, setSafePlace] = useState<string>("");
+  const [isWaiting, setIsWaiting] = useState(false);
   const navigate = useNavigate();
   const handleAge = (userAge: string) => {
     const age = userAge.trim();
@@ -60,6 +61,7 @@ export const Onboarding = () => {
   };
 
   const handleSubmit = async (event: React.SubmitEvent) => {
+    setIsWaiting(true);
     event.preventDefault();
     const data = {
       age: age,
@@ -78,6 +80,8 @@ export const Onboarding = () => {
       toast.error(
         "Da ist etwas schief gelaufen beim Onboarding. Versuche später es noch einmal!",
       );
+    } finally {
+      setIsWaiting(false);
     }
   };
   return (
@@ -201,7 +205,11 @@ export const Onboarding = () => {
           ></textarea>
         </section>
         <div className={styles.buttonContainer}>
-          <button type="submit" className={styles.button}>
+          <button
+            type="submit"
+            className={styles.button}
+            disabled={isWaiting ? true : false}
+          >
             <RocketLaunchIcon size={32} />
             Los geht´s
           </button>
