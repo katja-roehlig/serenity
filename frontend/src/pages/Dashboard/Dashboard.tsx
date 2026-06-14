@@ -23,7 +23,7 @@ interface FormattedCategoryList {
 
 export const Dashboard = () => {
   const [sortedList, setSortedList] = useState<FormattedCategoryList[]>([]);
-  const [_dashboardData, setDashboardData] = useState<DashboardData>({
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
     currentSituation: [],
     memory: [],
     safePlace: [],
@@ -48,19 +48,17 @@ export const Dashboard = () => {
     pattern: "Muster",
   };
 
-  const getDashboardData = async (): Promise<DashboardData | undefined> => {
+  const getDashboardData = async (): Promise<void> => {
     try {
       const response = await api.get("/dashboard");
       console.log("Juhuu, das hat geklappt:", response.data);
       const backendData = response.data;
       setDashboardData(backendData);
-      return backendData;
     } catch (error) {
       console.error(error);
       toast.error(
         "Deine Daten konnten nicht geladen werden. Versuche es später noch einmal!",
       );
-      return undefined;
     }
   };
 
@@ -81,13 +79,14 @@ export const Dashboard = () => {
 
   useEffect(() => {
     const processData = async () => {
-      const backendData = await getDashboardData();
-      if (backendData) {
-        formatDashboardData(backendData);
-      }
+      await getDashboardData();
     };
     processData();
   }, []);
+
+  useEffect(() => {
+    formatDashboardData(dashboardData);
+  }, [dashboardData]);
 
   const handleDelete = async (id: string, category: string) => {
     const check = window.confirm(
