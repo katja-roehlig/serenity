@@ -75,11 +75,15 @@ export const Onboarding = () => {
       await triggerRefresh();
       toast.success("Willkommen an Board!");
       navigate("/chat");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error(
-        "Da ist etwas schief gelaufen beim Onboarding. Versuche später es noch einmal!",
-      );
+      if (error.response && error.response.data && error.response.data.detail) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error(
+          "Da ist etwas schief gelaufen beim Onboarding. Versuche später es noch einmal!",
+        );
+      }
     } finally {
       setIsWaiting(false);
     }
