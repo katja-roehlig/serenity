@@ -56,9 +56,18 @@ class AgentState(TypedDict):
     exercise_id: NotRequired[Optional[int]]
     user_data: NotRequired[dict]
     memory_results: NotRequired[list[str]]
+    web_search_results: NotRequired[list[str]]
 
 
 def doorman(state: AgentState):
+    """Select the next workflow node based on exercise state.
+
+    Args:
+        state (AgentState): Current agent state dictionary.
+
+    Returns:
+        str: Name of the next workflow node.
+    """
     print("--- DOORMAN ---")
     if state.get("is_in_exercise"):
         return "get_user_memory"
@@ -66,6 +75,19 @@ def doorman(state: AgentState):
 
 
 async def check_user_state(state: AgentState):
+    """Analyze the current user messages and derive the agent state flags.
+
+    Args:
+        state (AgentState): Current agent state including message history.
+
+    Returns:
+        dict[str, bool]: Updated state flags based on the AI analysis.
+
+    Notes:
+        - Implies an external LLM invocation (`ainvoke`) which may fail due to
+          network or API issues.
+        - Expects `"messages"` to be a valid key within the provided `state`.
+    """
     print("--- CHECK USER STATE ---")
 
     system_prompt = """
@@ -99,6 +121,15 @@ async def check_user_state(state: AgentState):
 
 
 def decision_after_check(state: AgentState):
+    """Choose the next workflow node after state analysis.
+
+    Args:
+        state (AgentState): Current agent state containing analysis flags.
+
+    Returns:
+        str: Name of the next workflow node.
+
+    """
     print("--- DECISION MAKER ---")
     if state.get("needs_research", False):
         return "web_search"  # node
@@ -112,6 +143,16 @@ def decision_after_check(state: AgentState):
 
 
 async def get_matching_exercise(state: AgentState):
+    """Generate search keywords from the user state and retrieve a matching exercise ID.
+    Args:
+        state (AgentState): Current agent state with message history.
+    Returns:
+        dict[str, Optional[int]]: Mapping containing the selected exercise ID.
+    Notes:
+        - Implies an external LLM invocation (`ainvoke`) which may fail due to
+          network or API issues.
+        - Expects `"messages"` to be a valid key within the provided `state`.
+    """
     print("--- NODE: FIND EXERCISE ---")
     user_summary = f"""
         DU BIST EIN NEUTRALER ANALYTIKER FÜR EMOTIONALE VEKTOREN.
@@ -141,6 +182,16 @@ async def get_matching_exercise(state: AgentState):
 
 
 async def get_exercise_from_db(state: AgentState, db: AsyncSession):
+    """Fetch exercise details by ID and prepare exercise-related state.
+
+    Args:
+        state (AgentState): Current agent state containing exercise_id.
+        db (AsyncSession): Database session used for retrieval.
+
+    Returns:
+        dict[str, Any]: Updated exercise state or an empty dictionary if no exercise is found.
+
+    """
     print("--- NODE: GET EXERCISE DETAILS ---")
     exercise_id = state.get("exercise_id")
     if not exercise_id:
@@ -159,8 +210,16 @@ async def get_exercise_from_db(state: AgentState, db: AsyncSession):
 
 
 async def get_user_memory(state: AgentState):
+    """Retrieve relevant user memories frpm vector database based on the latest user message.
+    Args:
+        state (AgentState): Current agent state with messages and optional user_data.
+    Returns:
+        dict[str, list[str]]: Memory results under the key "memory_results".
+    Notes:
+        - Expects `"messages"` to be a valid key within the provided `state`.
+    """
     print("--- NODE: GET USER MEMORY ---")
-    user_id = state["user_id"]
+    user_id = state.get("user_id")
     last_message = state["messages"][-1]
     if not isinstance(last_message, HumanMessage):
         return {}
@@ -188,10 +247,21 @@ async def get_user_memory(state: AgentState):
 
 
 async def chat_therapist(state: AgentState):
+    """Generate a therapist-style response using user state and memories.
+    Args:
+        state (AgentState): Current agent state including messages, user_data, and exercise status.
+    Returns:
+        dict[str, Any]: Response messages and updated exercise state information.
+    Notes:
+        - Implies an external LLM invocation (`ainvoke`) which may fail due to
+          network or API issues.
+        - Expects `"messages"` to be a valid key within the provided `state`.
+    """
     print("--- YOUR THERAPIST IS TALKING ---")
     user_data = state.get("user_data", {})
     user_context = create_user_context(user_data)
     memories = state.get("memory_results", [])
+    web_results = state.get("web_search_results")
 
     system_prompt = f"""
 
@@ -205,6 +275,9 @@ async def chat_therapist(state: AgentState):
         system_prompt += "\n\n Falls weitere Infos zum User vorhanden sind, beziehe sie aktiv in die Unterhaltung ein und erkenne wiederkehrende Muster, Glaubenssätze und Entwicklungen."
         for memory in memories:
             system_prompt += f"\n- {memory}"
+    if web_results:
+        system_prompt += f"\n\n Hier sind Ergebnisse aus dem Web, zu dem Thema, das den user beschäftigt. Beziehe sie inhaltlich mit ein: {web_results}"
+
     system_prompt += f"""
         
     1.  DER USER STEHT IM FOKUS
@@ -267,6 +340,14 @@ async def chat_therapist(state: AgentState):
 
 
 async def web_search(state: AgentState):
+    """Perform a web search based on the last user message.
+    Args:
+        state (AgentState): Current agent state containing the message history.
+    Returns:
+        dict[str, Any]: Updated state containing search results and research status.
+    Returns:
+       dict: A dictionary containing 'web_search_results' (list[str]) and 'needs_research' (bool).
+    """
     print("--- NODE: WEB SEARCH ----")
     last_user_message = state.get("messages")[-1].content
     if not isinstance(last_user_message, str):
@@ -275,8 +356,12 @@ async def web_search(state: AgentState):
     if not search_query:
         return {}
     search_results = await tavily.ainvoke(search_query)
-    new_ai_knowledge = SystemMessage(content=f"background: {search_results}")
-    return {"messages": [new_ai_knowledge], "needs_research": False}
+    pure_content = [
+        result.get("content", "")
+        for result in search_results
+        if isinstance(result, dict)
+    ]
+    return {"web_search_results": pure_content, "needs_research": False}
 
 
 state_memory = MemorySaver()
@@ -285,6 +370,12 @@ state_memory = MemorySaver()
 def create_serenity_core_agent(
     db: AsyncSession,
 ):
+    """Create and compile the Serenity core agent workflow graph.
+    Args:
+        db (AsyncSession): Database session used by the exercise retrieval node.
+    Returns:
+        Any: Compiled workflow agent ready for execution.
+    """
     # Graph wird initialisiert
     workflow = StateGraph(AgentState)
 
@@ -325,6 +416,12 @@ def create_serenity_core_agent(
 
 
 def create_user_context(user_data: dict[str, Any]):
+    """Build a formatted user context string from profile data.
+    Args:
+        user_data (dict[str, Any]): User profile dictionary.
+    Returns:
+        str: Formatted user context string.
+    """
     user_context = f"""
          Der User ist {user_data.get("nickname", "Du")}"""
     if user_data.get("gender"):

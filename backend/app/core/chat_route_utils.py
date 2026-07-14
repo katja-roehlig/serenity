@@ -15,6 +15,19 @@ async def activate_archivist_agent(
     current_user: User,
     total_messages: list,
 ):
+    """Activate the archivist agent with the current user's messages.
+
+    Args:
+        db (AsyncSession): The asynchronous database session.
+        current_user (User): The user whose messages are being processed.
+        total_messages (list): The list of messages to send to the archivist agent.
+
+    Returns:
+        bool: True when the archivist agent completes successfully.
+
+    Raises:
+        Exception: Re-raises any exception encountered during agent execution.
+    """
     logger.info(f"--- ARCHIVIST TRIGGERED --- Message count: {len(total_messages)}")
     try:
         archivist_agent = create_archivist_agent(db)
@@ -33,6 +46,15 @@ async def activate_archivist_agent(
 
 
 async def get_user_resources(db, current_user):
+    """Retrieve and format user resource information.
+    Args:
+        db (AsyncSession): The asynchronous database session.
+        current_user (User): The current user whose resources are retrieved.
+
+    Returns:
+        dict: A dictionary containing user metadata, situation and safe place lists,
+            and excluded resource ids.
+    """
     result_safe_place = (
         await USER_PROPERTY_SERVICE.get_user_safe_place(db, current_user.id) or []
     )
@@ -41,9 +63,7 @@ async def get_user_resources(db, current_user):
     )
     user_safe_place = [result.content for result in result_safe_place]
     user_situation = [result.content for result in result_situation]
-    situation_ids = [
-        result.id for result in result_situation
-    ]  # Das macht er nicht... warum auch immer!
+    situation_ids = [result.id for result in result_situation]
     safe_place_id = [result.id for result in result_safe_place]
 
     user_data = {

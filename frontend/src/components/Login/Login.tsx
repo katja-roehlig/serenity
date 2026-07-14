@@ -30,9 +30,13 @@ export const Login = () => {
         navigate("/onboarding");
       }
       toast.success("Yeah - gleich geht es los!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login fehlgeschlagen:", error);
-      toast.error("Da ist etwas schief gelaufen");
+      if (error.response && error.response.data && error.response.data.detail) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error("Da ist etwas schief gelaufen");
+      }
     }
   };
   return (

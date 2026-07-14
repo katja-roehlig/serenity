@@ -38,6 +38,14 @@ class ArchivistState(TypedDict):
 
 
 async def analyze_messages(state: ArchivistState):
+    """Analyze incoming messages and extract structured memory items.
+
+    Args:
+        state: ArchivistState containing messages and user metadata.
+
+    Returns:
+        A dictionary with the extracted memory items under the key "found_items".
+    """
     print("--- NODE: ANALYZE MESSAGES ---")
 
     system_prompt = f"""
@@ -46,11 +54,11 @@ async def analyze_messages(state: ArchivistState):
 
     STRATEGIE FÜR VOLLSTÄNDIGKEIT:
     1. Lies den Chatverlauf. Nutze die Definitionen der Kategorien aus dem Pydantic-Schema.
-    2. Gehe den Text im Geiste für jede der 7 Kategorien einzeln durch. Beginne mit der ersten und gucke, ob du Infos findest, nimm dann die zweite Lategorie, dann die dritte und so weiter. 
+    2. Gehe den Text im Geiste für jede der 7 Kategorien einzeln durch. Beginne mit der ersten und gucke, ob du Infos findest, nimm dann die zweite Kategorie, dann die dritte und so weiter. 
     Wenn du Beweise für eine Kategorie findest, erstelle einen Eintrag. Wenn nicht, überspringe sie.
     3. Brich die Analyse nicht ab, sobald du 1-2 Einträge hast. Häufig verstecken sich in den Nachrichten Informationen viele verschiedene Kategorien.
     4. Strikte Thementrennung (Atomare Einträge): Wenn der User von zwei verschiedenen Themen erzählt, erstelle zwei separate Einträge. Wichtig für ChromaDB!
-    5. Sprache: Schreibe die Felder 'content' und 'reasoning' immer auf Deutsch und ich der 1.Person Singular (Ich-Perspektive).
+    5. Sprache: Schreibe die Felder 'content' und 'reasoning' immer auf Deutsch und in der 1.Person Singular (Ich-Perspektive).
 
     Falls die Nachrichten absolut keine relevanten Informationen enthalten, gib eine leere Liste zurück.
     """
@@ -64,6 +72,15 @@ async def analyze_messages(state: ArchivistState):
 
 
 async def save_information(state: ArchivistState, db: AsyncSession):
+    """Persist newly discovered memory information to storage.
+
+    Args:
+        state: ArchivistState containing extracted memory items and user metadata.
+        db: AsyncSession for database operations.
+
+    Returns:
+        An empty dictionary after processing.
+    """
     print("--- NODE: SAVE INFORMATION ---")
     user_id = state["user_id"]
     new_infos = state["found_items"]
@@ -88,6 +105,21 @@ async def save_information(state: ArchivistState, db: AsyncSession):
 
 
 async def clean_expired_information(state: ArchivistState, db: AsyncSession):
+    """Remove expired user memory items from VectorDB and SQL storage.
+
+    The function queries for expired user data via USER_PROPERTY_SERVICE, deletes
+    each item from the vector database using VECTOR_SERVICE.delete_memory and,
+    on success, removes the corresponding SQL record via
+    USER_PROPERTY_SERVICE.delete_data_by_id. Warnings are logged if either
+    deletion step fails for an item.
+
+    Args:
+        state: ArchivistState containing at least the 'user_id'.
+        db: AsyncSession used for database operations.
+
+    Returns:
+        An empty dict on completion.
+    """
     print("--- NODE: CLEAN EXPIRED INFORMATION ---")
     user_id = state["user_id"]
     expired_data = await USER_PROPERTY_SERVICE.find_expired_data(user_id, db)
@@ -113,9 +145,16 @@ async def clean_expired_information(state: ArchivistState, db: AsyncSession):
 
 
 def create_archivist_agent(db: AsyncSession):
+    """Build and compile the archivist workflow graph.
+
+    Args:
+        db: AsyncSession to bind database operations to workflow nodes.
+
+    Returns:
+        The compiled state graph for the archivist agent.
+    """
     # Graph wird initialisiert
     workflow = StateGraph(ArchivistState)
-
     # Nodes zum Graphen hinzufügen, mit partial werden die argumente hinzugefügt - workflow.add_node("name", function)
     workflow.add_node("analyze_messages", analyze_messages)
     workflow.add_node("save_information", partial(save_information, db=db))

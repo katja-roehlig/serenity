@@ -19,6 +19,17 @@ async def handle_life_data(
     user_name: str,
     db: AsyncSession,
 ):
+    """Handle life-related data and persist changes.
+
+    Args:
+        content (str): The content to store.
+        metadata (dict): Metadata for the memory item.
+        user_name (str): User name used to replace generic references in the content.
+        db (AsyncSession): The asynchronous database session.
+
+    Raises:
+        Exception: Re-raises exceptions encountered while updating memory or database records.
+    """
     metadata["status"] = "active"
     embedding = await VECTOR_SERVICE.create_embedding(content)
     result = await VECTOR_SERVICE.search_memory(metadata, embedding, status="active")
@@ -67,6 +78,18 @@ async def handle_life_data(
 async def handle_supposed_data(
     content: str, reasoning: str, metadata: dict, user_name: str, db: AsyncSession
 ):
+    """Process supposed data and forward hidden-memory handling.
+
+    Args:
+        content (str): The content to store.
+        reasoning (str): Reasoning text associated with the content.
+        metadata (dict): Metadata for the memory item.
+        user_name (str): User name used to replace generic references.
+        db (AsyncSession): The asynchronous database session.
+
+    Raises:
+        Exception: Propagates exceptions from hidden memory handling.
+    """
     expiration_date = (datetime.now(timezone.utc) + timedelta(weeks=22)).strftime(
         "%Y-%m-%d"
     )
@@ -93,6 +116,20 @@ async def handle_hidden_search(
     expiration_date: str,
     db: AsyncSession,
 ):
+    """Handle hidden memory entries and update or create records.
+
+    Args:
+        content (str): The content to store.
+        reasoning (str): Reasoning text associated with the content.
+        metadata (dict): Metadata for the memory item.
+        user_name (str): User name used to replace generic references.
+        embedding (list[float]): Embedding vector for the content.
+        expiration_date (str): Expiration date string for hidden memory.
+        db (AsyncSession): The asynchronous database session.
+
+    Raises:
+        Exception: Propagates exceptions from update or rollback operations.
+    """
     hidden_result = await VECTOR_SERVICE.search_memory(
         metadata, embedding, status="hidden"
     )
@@ -135,6 +172,15 @@ async def handle_hidden_search(
 
 
 def create_new_metadata(metadata: dict, reasoning: str):
+    """Create metadata for a new hidden memory entry.
+
+    Args:
+        metadata (dict): Base metadata to update.
+        reasoning (str): Reasoning text to attach.
+
+    Returns:
+        dict: Updated metadata including hidden status, counter and reasoning.
+    """
     metadata["status"] = "hidden"
     metadata["counter"] = 1
     metadata["reasoning"] = [reasoning]
@@ -142,9 +188,18 @@ def create_new_metadata(metadata: dict, reasoning: str):
 
 
 def update_metadata(doc: Document, new_reasoning: str):
+    """Update metadata for an existing hidden memory document.
+
+    Args:
+        doc (Document): Document object from the vector store.
+        new_reasoning (str): New reasoning text to append.
+
+    Returns:
+        dict: Updated metadata with incremented counter and status.
+    """
     updating_metadata = doc.metadata
     if updating_metadata["category"] in ["belief", "pattern"]:
-        limit = 3
+        limit = 10
     else:
         limit = 3
     counter = updating_metadata.get("counter", 0) + 1
@@ -160,6 +215,17 @@ def update_metadata(doc: Document, new_reasoning: str):
 
 
 async def save_to_db(content: str, metadata: dict, user_name: str, db):
+    """Persist memory content and metadata to the database.
+
+    Args:
+        content (str): Original content to save.
+        metadata (dict): Metadata for the memory item.
+        user_name (str): User name used to replace generic references.
+        db: The database session.
+
+    Raises:
+        Exception: Propagates exceptions from user property persistence.
+    """
     final_content = content
     reasoning = metadata.get("reasoning")
     final_reasoning = []
