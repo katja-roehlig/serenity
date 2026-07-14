@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 
 class UserService:
     async def register_user(self, db, new_user):
-        db.add(new_user)
+
         try:
+            db.add(new_user)
             await db.commit()
             await db.refresh(new_user)
             return new_user
         except SQLAlchemyError as e:
+            await db.rollback()
             raise e
 
     async def login_user(self, db, user_mail):

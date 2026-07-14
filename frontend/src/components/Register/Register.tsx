@@ -22,9 +22,13 @@ export const Register = () => {
       console.log("Erfolg:", response.data);
       toast.success("Juhuu, das hat geklappt 🙃");
       navigate("/login");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Da ist etwas schief gelaufen. Versuche es noch einmal!");
+      if (error.response && error.response.data && error.response.data.detail) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error("Da ist etwas schief gelaufen. Versuche es noch einmal!");
+      }
     }
   };
   return (

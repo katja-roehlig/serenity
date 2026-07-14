@@ -34,7 +34,7 @@ from langchain_core.runnables import RunnableConfig
 from app.ai.serenity_core_agent import AgentState, create_serenity_core_agent
 from app.services.user_service import USER_SERVICE
 from app.services.exercise_service import EXERCISE_SERVICE
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.services.vector_service import VECTOR_SERVICE
 from app.core.chat_route_utils import (
     activate_archivist_agent,
@@ -78,6 +78,17 @@ logger = logging.getLogger(__name__)
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ):
+    """Verifies the user using the JWT token.
+    Args:
+        token (str, optional): The OAuth2 JWT access token.
+        db (AsyncSession, optional): The asynchronous database session.
+
+    Returns:
+        User: The authenticated user object.
+
+    Raises:
+        HTTPException: If the token is invalid or the user does not exist.
+    """
     user_id = decode_acces_token(token)
     if user_id is None:
         raise HTTPException(
@@ -93,12 +104,32 @@ async def get_current_user(
 
 @app.get("/exercise")
 async def show_exercises(db: AsyncSession = Depends(get_db)):
+    """Gives all exercises to frontend
+
+    Args:
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+       A list of all exercises
+    """
     exercises = await EXERCISE_SERVICE.get_all_exercises(db)
     return exercises
 
 
 @app.post("/exercise", response_model=ExerciseRead)
 async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(get_db)):
+    """Create a new exercise and save it to the database.
+
+    Args:
+        user_input (ExerciseCreate): The payload containing exercise details.
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        ExerciseRead: The created exercise object.
+
+    Raises:
+        HTTPException: 500 Internal Server Error if a database error occurs.
+    """
     new_exercise = Exercise(
         title=user_input.title,
         goal=user_input.goal,
@@ -119,6 +150,20 @@ async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(g
 
 @app.delete("/exercise/{exercise_id}")
 async def delete_exercise(exercise_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Deletes an exercise by its ID.
+
+    Args:
+        exercise_id (int): The ID of the exercise to delete.
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        The deleted exercise.
+
+    Raises:
+        HTTPException: 404 Not Found if the exercise does not exist.
+        HTTPException: 500 Internal Server Error if a database error occurs.
+    """
     try:
         result = await EXERCISE_SERVICE.delete_exercise(db, exercise_id)
         if result is None:
@@ -134,6 +179,20 @@ async def delete_exercise(exercise_id: int, db: AsyncSession = Depends(get_db)):
 
 @app.get("/exercise/{exercise_id}", response_model=ExerciseRead)
 async def get_exercise_by_id(exercise_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieves an exercise by its ID.
+
+    Args:
+        exercise_id (int): The ID of the exercise to retrieve.
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        ExerciseRead: The exercise with the specified ID.
+
+    Raises:
+        HTTPException: 404 Not Found if the exercise does not exist.
+        HTTPException: 500 Internal Server Error if a database error occurs.
+    """
     try:
         exercise = await EXERCISE_SERVICE.get_exercise_by_id(db, exercise_id)
         if exercise is None:
@@ -151,6 +210,21 @@ async def get_exercise_by_id(exercise_id: int, db: AsyncSession = Depends(get_db
 async def update_exercise(
     editedEx: ExerciseCreate, exercise_id: int, db: AsyncSession = Depends(get_db)
 ):
+    """
+    Updates an existing exercise.
+
+    Args:
+        editedEx (ExerciseCreate): The updated exercise data.
+        exercise_id (int): The ID of the exercise to update.
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        ExerciseRead: The updated exercise.
+
+    Raises:
+        HTTPException: 404 Not Found if the exercise does not exist.
+        HTTPException: 500 Internal Server Error if a database error occurs.
+    """
     try:
         updated_exercise = await EXERCISE_SERVICE.update_exercise(
             db, exercise_id, editedEx
@@ -168,8 +242,23 @@ async def update_exercise(
 
 @app.post("/register", response_model=UserRead)
 async def register_user(user_reg: UserCreate, db: AsyncSession = Depends(get_db)):
-    # passwort verschlüsseln
-    hashed_pwd = hash_password(user_reg.password)
+    """
+    Registers a new user in the system.
+
+    Hashes the password and capitalizes the nickname before saving to the database.
+
+    Args:
+        user_reg (UserCreate): The user data for registration.
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        UserRead: The newly created user record.
+
+    Raises:
+        HTTPException: 400 Bad Request if the email or nickname is already registered.
+        HTTPException: 500 Internal Server Error if a database error occurs.
+    """
+    hashed_pwd = hash_password(user_reg.password)  # passwort verschlüsseln
     # neuen user anlegen
     new_user = User(
         mail=user_reg.mail,
@@ -180,24 +269,55 @@ async def register_user(user_reg: UserCreate, db: AsyncSession = Depends(get_db)
     try:
         await USER_SERVICE.register_user(db, new_user)
         return new_user
+    except IntegrityError as e:
+        # Fängt doppelte E-Mails / Nicknames ab
+        logger.warning(f"Registration failed - Identity conflict: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered."
+        )
     except SQLAlchemyError as e:
-        logger.error(f"Failed to register a new user: {e}")
-        return {"error": e}, 500
+        # Allgemeiner Datenbankfehler
+        logger.error(f"Failed to register a new user due to DB error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during registration.",
+        )
 
 
 @app.post("/login", response_model=ReturnedLoginData)
 async def login_user(
     user_log: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
+    """
+    Authenticates a user and generates an OAuth2 access token.
+
+    Verifies the credentials against the database using a secure hashing check.
+    Returns identical generic error messages for missing users and invalid passwords
+    to prevent user enumeration attacks.
+
+    Args:
+        user_log (OAuth2PasswordRequestForm): The login credentials (username is treated as email).
+        db (AsyncSession): The asynchronous database session.
+
+    Returns:
+        ReturnedLoginData: Token data and basic user profile information.
+
+    Raises:
+        HTTPException: 401 Unauthorized if the email does not exist or the password is incorrect.
+    """
     user = await USER_SERVICE.login_user(db, user_log.username)
     # Achtung: username ist hier das Hauptidentifizierungsmerkmal, egal, ob das Mail, name telefonnumber ist - es heißt immer username!
     if not user:
-        raise HTTPException(status_code=400, detail="Falsche Daten")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="E-Mail-Adresse oder Passwort ist ungültig.",
+        )
 
     if not login_check(str(user.hashed_password), user_log.password):
-        raise HTTPException(status_code=400, detail="Falsche Daten")
-    # has_onboarding = await USER_SERVICE.user_exists_in_user_properties(db, user.id)
-
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="E-Mail-Adresse oder Passwort ist ungültig.",
+        )
     user_info = {"sub": str(user.id)}
     token = create_access_token(user_info)
     return {
@@ -208,17 +328,23 @@ async def login_user(
     }
 
 
-@app.get("/user/profile", response_model=UserBasic)
-async def show_user_profile(current_user: User = Depends(get_current_user)):
-    return current_user
-
-
 @app.post("/onboarding")
 async def save_onboarding_data(
     onboarding_data: UserOnboarding,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Saves the onboarding data for the current user.
+
+    Args:
+        onboarding_data (UserOnboarding): The onboarding data to save.
+        db (AsyncSession): The asynchronous database session.
+        current_user (User): The current user.
+
+    Returns:
+        dict: A dictionary indicating the success of the operation.
+    """
     success_data = await USER_SERVICE.save_onboarding_data(
         db, onboarding_data, current_user
     )
@@ -231,6 +357,25 @@ async def handle_chat(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Handles a new chat message from the user using the Serenity Core Agent.
+
+    Processes the incoming message, manages the conversation history with a
+    sliding window approach via the Archivist Agent, and invokes the LLM.
+
+    Args:
+        new_message (ChatItem): The incoming message payload from the frontend.
+        db (AsyncSession): The asynchronous database session.
+        current_user (User): The authenticated user injecting the message.
+
+    Returns:
+        dict: A dictionary containing the AI's role and the text response.
+
+    Notes:
+        - Internal failures within the Archivist Agent (e.g., during memory trimming)
+          or Checkpointer diagnosis are caught, logged as errors, and will not
+          interrupt the chat flow or crash the endpoint.
+    """
     # Umformulieren, der vom Frontend kommenden new-message, so dass sie zu langchain passt
     current_user_message = HumanMessage(content=new_message.content)
 
@@ -293,6 +438,18 @@ async def handle_chat(
 async def show_user_data(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
+    """Retrieve active dashboard data for the authenticated user.
+
+    Args:
+        db: Database session dependency.
+        current_user: Authenticated user dependency.
+
+    Returns:
+        Dashboard data grouped by category for frontend consumption.
+
+    Raises:
+        HTTPException: If the database is unavailable.
+    """
     try:
         result = await USER_PROPERTY_SERVICE.get_all_active_user_data(
             db, current_user.id
@@ -304,6 +461,14 @@ async def show_user_data(
 
 
 def prepare_data_for_frontend(result):
+    """Transform stored user data into frontend dashboard categories.
+
+    Args:
+        result: Iterable of user property records.
+
+    Returns:
+        dict: Dashboard data grouped by category.
+    """
     dashboard_data = {
         "current_situation": [],
         "memory": [],
@@ -333,6 +498,19 @@ async def delete_dashboard_items(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Delete a dashboard item for the authenticated user.
+
+    Args:
+        item_id: Identifier of the dashboard item.
+        db: Database session dependency.
+        current_user: Authenticated user dependency.
+
+    Returns:
+        dict: Confirmation message.
+
+    Raises:
+        HTTPException: If the item does not exist, the database fails, or the vector service is unavailable.
+    """
     try:
         is_users_data = await USER_PROPERTY_SERVICE.find_data_by_user_and_id(
             user_id=current_user.id, data_id=item_id, db=db
@@ -366,6 +544,18 @@ async def delete_dashboard_items(
 async def delete_user(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
+    """Delete the current user and all their associated data.
+
+    Args:
+        db: Database session dependency.
+        current_user: Authenticated user dependency.
+
+    Returns:
+        None
+
+    Raises:
+      HTTPException on failure.
+    """
     user_data = await USER_PROPERTY_SERVICE.get_all_user_data(
         db=db, user_id=current_user.id
     )
@@ -392,23 +582,3 @@ async def delete_user(
         raise HTTPException(
             status_code=500, detail=f"Technical error during profile deletion. {error}"
         )
-
-
-# only test-functions
-@app.get("/vectordata/{user_id}")
-async def test_vector_db(user_id: str):
-    if os.getenv("ENVIRONMENT") != "development":
-        raise HTTPException(status_code=403, detail="Forbidden in production")
-
-    memories = await VECTOR_SERVICE.get_memories_to_develop(user_id=user_id)
-    return {"status": "In der Vektor-DB gefunden:", "data": memories}
-
-
-@app.get("/clean-vectordata/{user_id}")
-async def clean_vector_db(user_id: str):
-    if os.getenv("ENVIRONMENT") != "development":
-        raise HTTPException(status_code=403, detail="Forbidden in production")
-    await VECTOR_SERVICE.delete_all_user_memories(user_id=user_id)
-    return {
-        "status": f"Alle Onboarding-Geisterdaten für User {user_id} wurden gelöscht!"
-    }
