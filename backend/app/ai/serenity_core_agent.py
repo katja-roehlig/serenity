@@ -242,7 +242,6 @@ async def get_user_memory(state: AgentState):
                 for reason in reasoning_list:
                     user_memory += f"\n - {reason}"
             important_memory.append(user_memory)
-            print(f"MEMORIES: {important_memory[:3]}")
     return {"memory_results": important_memory[:3]}
 
 
@@ -261,6 +260,7 @@ async def chat_therapist(state: AgentState):
     user_data = state.get("user_data", {})
     user_context = create_user_context(user_data)
     memories = state.get("memory_results", [])
+
     web_results = state.get("web_search_results")
 
     system_prompt = f"""
@@ -302,7 +302,7 @@ async def chat_therapist(state: AgentState):
         Nicht jede Antwort braucht Fragen, Zusammenfassungen oder einen Abschlusssatz.
         Reagiere wie ein echter Gesprächspartner.
     7.  STIL
-        Antworte meist kurz (ca. 60–120 Wörter).
+        Antworte meist kurz (ca. 20–30 Wörter).
         Nutze nur so wenige Worte wie möglich.
         In emotionalen oder komplexen Situationen darfst du ausführlicher werden.
         Schreibe übersichtlich, nutze oft Absätze, Markdown und gelegentlich passende Emojis.

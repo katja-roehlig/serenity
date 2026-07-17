@@ -82,10 +82,8 @@ async def get_current_user(
     Args:
         token (str, optional): The OAuth2 JWT access token.
         db (AsyncSession, optional): The asynchronous database session.
-
     Returns:
         User: The authenticated user object.
-
     Raises:
         HTTPException: If the token is invalid or the user does not exist.
     """
@@ -102,13 +100,16 @@ async def get_current_user(
     return user
 
 
+@app.get("/user/profile", response_model=UserBasic)
+async def show_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @app.get("/exercise")
 async def show_exercises(db: AsyncSession = Depends(get_db)):
     """Gives all exercises to frontend
-
     Args:
         db (AsyncSession): The asynchronous database session.
-
     Returns:
        A list of all exercises
     """
@@ -119,14 +120,11 @@ async def show_exercises(db: AsyncSession = Depends(get_db)):
 @app.post("/exercise", response_model=ExerciseRead)
 async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(get_db)):
     """Create a new exercise and save it to the database.
-
     Args:
         user_input (ExerciseCreate): The payload containing exercise details.
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         ExerciseRead: The created exercise object.
-
     Raises:
         HTTPException: 500 Internal Server Error if a database error occurs.
     """
@@ -152,14 +150,11 @@ async def add_exercises(user_input: ExerciseCreate, db: AsyncSession = Depends(g
 async def delete_exercise(exercise_id: int, db: AsyncSession = Depends(get_db)):
     """
     Deletes an exercise by its ID.
-
     Args:
         exercise_id (int): The ID of the exercise to delete.
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         The deleted exercise.
-
     Raises:
         HTTPException: 404 Not Found if the exercise does not exist.
         HTTPException: 500 Internal Server Error if a database error occurs.
@@ -181,14 +176,11 @@ async def delete_exercise(exercise_id: int, db: AsyncSession = Depends(get_db)):
 async def get_exercise_by_id(exercise_id: int, db: AsyncSession = Depends(get_db)):
     """
     Retrieves an exercise by its ID.
-
     Args:
         exercise_id (int): The ID of the exercise to retrieve.
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         ExerciseRead: The exercise with the specified ID.
-
     Raises:
         HTTPException: 404 Not Found if the exercise does not exist.
         HTTPException: 500 Internal Server Error if a database error occurs.
@@ -212,15 +204,12 @@ async def update_exercise(
 ):
     """
     Updates an existing exercise.
-
     Args:
         editedEx (ExerciseCreate): The updated exercise data.
         exercise_id (int): The ID of the exercise to update.
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         ExerciseRead: The updated exercise.
-
     Raises:
         HTTPException: 404 Not Found if the exercise does not exist.
         HTTPException: 500 Internal Server Error if a database error occurs.
@@ -246,14 +235,11 @@ async def register_user(user_reg: UserCreate, db: AsyncSession = Depends(get_db)
     Registers a new user in the system.
 
     Hashes the password and capitalizes the nickname before saving to the database.
-
     Args:
         user_reg (UserCreate): The user data for registration.
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         UserRead: The newly created user record.
-
     Raises:
         HTTPException: 400 Bad Request if the email or nickname is already registered.
         HTTPException: 500 Internal Server Error if a database error occurs.
@@ -290,18 +276,14 @@ async def login_user(
 ):
     """
     Authenticates a user and generates an OAuth2 access token.
-
     Verifies the credentials against the database using a secure hashing check.
     Returns identical generic error messages for missing users and invalid passwords
     to prevent user enumeration attacks.
-
     Args:
         user_log (OAuth2PasswordRequestForm): The login credentials (username is treated as email).
         db (AsyncSession): The asynchronous database session.
-
     Returns:
         ReturnedLoginData: Token data and basic user profile information.
-
     Raises:
         HTTPException: 401 Unauthorized if the email does not exist or the password is incorrect.
     """
@@ -336,7 +318,6 @@ async def save_onboarding_data(
 ):
     """
     Saves the onboarding data for the current user.
-
     Args:
         onboarding_data (UserOnboarding): The onboarding data to save.
         db (AsyncSession): The asynchronous database session.
@@ -439,14 +420,11 @@ async def show_user_data(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Retrieve active dashboard data for the authenticated user.
-
     Args:
         db: Database session dependency.
         current_user: Authenticated user dependency.
-
     Returns:
         Dashboard data grouped by category for frontend consumption.
-
     Raises:
         HTTPException: If the database is unavailable.
     """
@@ -545,22 +523,20 @@ async def delete_user(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Delete the current user and all their associated data.
-
     Args:
         db: Database session dependency.
         current_user: Authenticated user dependency.
-
     Returns:
         None
-
     Raises:
       HTTPException on failure.
     """
-    user_data = await USER_PROPERTY_SERVICE.get_all_user_data(
-        db=db, user_id=current_user.id
-    )
-    item_ids = [item.id for item in user_data]
+
     try:
+        user_data = await USER_PROPERTY_SERVICE.get_all_user_data(
+            db=db, user_id=current_user.id
+        )
+        item_ids = [item.id for item in user_data]
         success = await VECTOR_SERVICE.delete_memory(item_ids)
         if not success:
             raise Exception("Could not delete data from vector DB")
@@ -568,17 +544,20 @@ async def delete_user(
             db=db,
             user_id=current_user.id,
         )
+        # eigentlich sollte die VektorDB schon clean sein - das ist nur ein Sicherheitsschritt.
         chroma_cleanup = await VECTOR_SERVICE.delete_all_by_user_id(
             str(current_user.id)
         )
         if not chroma_cleanup:
-            raise Exception("Could not wipe user_id metadata from vector DB")
-
-    except (SQLAlchemyError, VectorError, ValueError) as error:
+            logger.critical(
+                f"Attention: Failed to wipe eventually remaining Chroma fragments for user {current_user.id}! "
+            )
+    except (SQLAlchemyError, VectorError, ValueError, Exception) as error:
         await db.rollback()
         logger.error(
             f"Failed to delete user profile {current_user.id}: {error}", exc_info=True
         )
         raise HTTPException(
-            status_code=500, detail=f"Technical error during profile deletion. {error}"
+            status_code=500,
+            detail=f"Dein Profil konnte aufgrund eines technischen Fehlers nicht gelöscht werden. Bitte versuche es später nocheinmal.",
         )

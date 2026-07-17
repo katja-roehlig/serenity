@@ -24,11 +24,15 @@ export const Settings = async () => {
       localStorage.removeItem(`Chat ${userData.id}`);
       toast.success("Dein Profil wurde erfolgreich gelöscht");
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error(
-        "Fehler beim Löschen deines Profils. Bitte versuche es später noch einmal.",
-      );
+      if (error.response && error.response.data && error.response.data.detail) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error(
+          "Fehler beim Löschen deines Profils. Bitte versuche es später noch einmal.",
+        );
+      }
     }
   };
 

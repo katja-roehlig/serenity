@@ -20,13 +20,11 @@ async def handle_life_data(
     db: AsyncSession,
 ):
     """Handle life-related data and persist changes.
-
     Args:
         content (str): The content to store.
         metadata (dict): Metadata for the memory item.
         user_name (str): User name used to replace generic references in the content.
         db (AsyncSession): The asynchronous database session.
-
     Raises:
         Exception: Re-raises exceptions encountered while updating memory or database records.
     """
@@ -79,7 +77,6 @@ async def handle_supposed_data(
     content: str, reasoning: str, metadata: dict, user_name: str, db: AsyncSession
 ):
     """Process supposed data and forward hidden-memory handling.
-
     Args:
         content (str): The content to store.
         reasoning (str): Reasoning text associated with the content.
@@ -173,11 +170,9 @@ async def handle_hidden_search(
 
 def create_new_metadata(metadata: dict, reasoning: str):
     """Create metadata for a new hidden memory entry.
-
     Args:
         metadata (dict): Base metadata to update.
         reasoning (str): Reasoning text to attach.
-
     Returns:
         dict: Updated metadata including hidden status, counter and reasoning.
     """
@@ -189,11 +184,9 @@ def create_new_metadata(metadata: dict, reasoning: str):
 
 def update_metadata(doc: Document, new_reasoning: str):
     """Update metadata for an existing hidden memory document.
-
     Args:
         doc (Document): Document object from the vector store.
         new_reasoning (str): New reasoning text to append.
-
     Returns:
         dict: Updated metadata with incremented counter and status.
     """
@@ -216,7 +209,6 @@ def update_metadata(doc: Document, new_reasoning: str):
 
 async def save_to_db(content: str, metadata: dict, user_name: str, db):
     """Persist memory content and metadata to the database.
-
     Args:
         content (str): Original content to save.
         metadata (dict): Metadata for the memory item.
@@ -240,16 +232,16 @@ async def save_to_db(content: str, metadata: dict, user_name: str, db):
     else:
         logger.warning("No Username available. Content stays in original version.")
     user_property = UserProperty(
-        id=metadata["id"],
-        user_id=metadata["user_id"],
-        category=metadata["category"],
+        id=metadata.get("id"),
+        user_id=metadata.get("user_id"),
+        category=metadata.get("category"),
         content=final_content,
-        created_at=metadata["created_at"],
+        created_at=metadata.get("created_at"),
         expires_at=metadata.get("expires_at"),
         reasoning=final_reasoning,
-        status=metadata["status"],
+        status=metadata.get("status"),
         counter=metadata.get("counter"),
     )
 
     await USER_PROPERTY_SERVICE.add_data(db, user_property)
-    logger.info(f"Erfolgreich in SQLite gespeichert für User {metadata['user_id']}")
+    logger.info(f"Erfolgreich in SQLite gespeichert für User {metadata.get('user_id')}")

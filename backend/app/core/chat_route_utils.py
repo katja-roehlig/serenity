@@ -45,7 +45,7 @@ async def activate_archivist_agent(
         raise
 
 
-async def get_user_resources(db, current_user):
+async def get_user_resources(db, current_user) -> dict:
     """Retrieve and format user resource information.
     Args:
         db (AsyncSession): The asynchronous database session.
@@ -55,12 +55,14 @@ async def get_user_resources(db, current_user):
         dict: A dictionary containing user metadata, situation and safe place lists,
             and excluded resource ids.
     """
-    result_safe_place = (
-        await USER_PROPERTY_SERVICE.get_user_safe_place(db, current_user.id) or []
+    result_safe_place = await USER_PROPERTY_SERVICE.get_user_safe_place(
+        db, current_user.id
     )
-    result_situation = (
-        await USER_PROPERTY_SERVICE.get_user_situation(db, current_user.id) or []
+    print(f"SAFEPLACE: {result_safe_place}")
+    result_situation = await USER_PROPERTY_SERVICE.get_user_situation(
+        db, current_user.id
     )
+    print(f"SITUATION: {result_situation}")
     user_safe_place = [result.content for result in result_safe_place]
     user_situation = [result.content for result in result_situation]
     situation_ids = [result.id for result in result_situation]
@@ -74,4 +76,5 @@ async def get_user_resources(db, current_user):
         "safe_place": user_safe_place,
         "excluded_ids": situation_ids + safe_place_id,
     }
+    print(f"USERDATA: {user_data}")
     return user_data
